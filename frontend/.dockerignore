@@ -1,0 +1,15 @@
+node_modules
+.next
+out
+build
+coverage
+.env*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Ignore python caches and test reports seen in your directory
+__pycache__
+*.pyc
+*.html

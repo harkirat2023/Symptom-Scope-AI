@@ -1,0 +1,227 @@
+"use client";
+
+import { useState } from "react";
+import { useAuth } from "@clerk/nextjs";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { createReminder, updateReminder } from "@/lib/api/reminders";
+import { useReminderStore } from "@/lib/stores/reminder-store";
+import type { Reminder, ReminderFrequency } from "@/lib/api/reminders";
+import { toast } from "sonner";
+
+const formSchema = z.object({
+  medicine_name: z.string().min(1, "Medicine name is required").max(100),
+  dosage: z.string().min(1, "Dosage is required").max(50),
+  frequency: z.enum(["daily", "specific_days", "every_x_hours", "as_needed"]),
+  duration_days: z.coerce.number().int().min(1).max(365),
+  start_time: z.string().regex(/^\d{2}:\d{2}$/, "Use HH:MM format"),
+  email_reminder: z.boolean().default(false),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+interface ReminderFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  editReminder?: Reminder | null;
+}
+
+export function ReminderForm({
+  open,
+  onOpenChange,
+  editReminder,
+}: ReminderFormProps) {
+  const { getToken } = useAuth();
+  const { addReminder, updateReminder: updateStore } = useReminderStore();
+  const [saving, setSaving] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: editReminder
+      ? {
+          medicine_name: editReminder.medicine_name,
+          dosage: editReminder.dosage,
+          frequency: editReminder.frequency,
+          duration_days: editReminder.duration_days,
+          start_time: editReminder.start_time,
+          email_reminder: editReminder.email_reminder,
+        }
+      : {
+          medicine_name: "",
+          dosage: "",
+          frequency: "daily",
+          duration_days: 7,
+          start_time: "08:00",
+          email_reminder: false,
+        },
+  });
+
+  const onSubmit = async (data: FormValues) => {
+    setSaving(true);
+    try {
+      const token = await getToken();
+      if (editReminder) {
+        const updated = await updateReminder(
+          editReminder.id,
+          { ...data, status: editReminder.status },
+          token ?? undefined
+        );
+        updateStore(editReminder.id, updated);
+        toast.success("Reminder updated");
+      } else {
+        const created = await createReminder(data, token ?? undefined);
+        addReminder(created);
+        toast.success("Reminder created");
+      }
+      onOpenChange(false);
+      reset();
+    } catch {
+      toast.error("Failed to save reminder");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {editReminder ? "Edit Reminder" : "New Medicine Reminder"}
+          </DialogTitle>
+          <DialogDescription>
+            Set up a reminder for your medication.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="medicine_name">Medicine Name</Label>
+            <Input
+              id="medicine_name"
+              placeholder="e.g., Amoxicillin"
+              {...register("medicine_name")}
+            />
+            {errors.medicine_name && (
+              <p className="text-xs text-destructive">
+                {errors.medicine_name.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="dosage">Dosage</Label>
+            <Input
+              id="dosage"
+              placeholder="e.g., 500mg"
+              {...register("dosage")}
+            />
+            {errors.dosage && (
+              <p className="text-xs text-destructive">
+                {errors.dosage.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="frequency">Frequency</Label>
+            <Select
+              defaultValue={watch("frequency")}
+              onValueChange={(v: ReminderFrequency) =>
+                setValue("frequency", v)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select frequency" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="specific_days">Specific Days</SelectItem>
+                <SelectItem value="every_x_hours">Every X Hours</SelectItem>
+                <SelectItem value="as_needed">As Needed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="duration_days">Duration (days)</Label>
+              <Input
+                id="duration_days"
+                type="number"
+                min={1}
+                max={365}
+                {...register("duration_days")}
+              />
+            </div>
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="start_time">Start Time</Label>
+              <Input
+                id="start_time"
+                type="time"
+                {...register("start_time")}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <Label htmlFor="email_reminder" className="font-medium">
+                Email Reminder
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Get email notifications
+              </p>
+            </div>
+            <Switch
+              id="email_reminder"
+              checked={watch("email_reminder")}
+              onCheckedChange={(v) => setValue("email_reminder", v)}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {editReminder ? "Update" : "Create Reminder"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

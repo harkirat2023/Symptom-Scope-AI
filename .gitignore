@@ -1,0 +1,16 @@
+.env
+.env.local
+.env.*.local
+__pycache__/
+*.py[cod]
+*.egg-info/
+node_modules/
+.next/
+dist/
+build/
+*.pkl
+venv/
+backend/venv/
+frontend/node_modules/
+backend/venv/
+frontend/node_modules/
