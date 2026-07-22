@@ -15,24 +15,22 @@ async def get_doctors(
     specialty: str | None = Query(None, max_length=100, description="Filter by exact specialty"),
     location: str | None = Query(None, max_length=100, description="Filter by location"),
     sort_by: str | None = Query(None, description="Sort field: rating, distance_km, availability"),
-    sort_order: str = Query("desc", description="Sort direction: asc or desc"),
     limit: int = Query(50, ge=1, le=100, description="Max results"),
     _: str = Depends(get_current_user),
     doctor_service: DoctorService = Depends(),
 ):
-    results = doctor_service.get_recommendations(
+    results = await doctor_service.get_recommendations(
         specialty=specialty,
         location=location,
         query=q,
         sort_by=sort_by,
-        sort_order=sort_order,
         limit=limit,
     )
     return DoctorSearchResponse(
-        results=[DoctorResponse(**d) for d in results],
+        doctors=[DoctorResponse(**d) for d in results],
         total=len(results),
-        specialties=doctor_service.get_specialties(),
-        locations=doctor_service.get_locations(),
+        specialties=await doctor_service.get_specialties(),
+        locations=await doctor_service.get_locations(),
     )
 
 
@@ -43,7 +41,7 @@ async def get_doctor_specialties(
     _: str = Depends(get_current_user),
     doctor_service: DoctorService = Depends(),
 ):
-    return doctor_service.get_specialties()
+    return await doctor_service.get_specialties()
 
 
 @router.get("/doctors/locations", response_model=list[str])
@@ -53,4 +51,4 @@ async def get_doctor_locations(
     _: str = Depends(get_current_user),
     doctor_service: DoctorService = Depends(),
 ):
-    return doctor_service.get_locations()
+    return await doctor_service.get_locations()

@@ -1,11 +1,14 @@
 import time
+import logging
 import jwt
 import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils.settings import settings
 
-security = HTTPBearer()
+logger = logging.getLogger("symptomscope.auth")
+
+security = HTTPBearer(auto_error=False)
 
 JWKS_CACHE: dict[str, tuple[float, list[dict]]] = {}
 JWKS_CACHE_TTL: int = 3600
@@ -30,14 +33,20 @@ async def _get_jwks_client() -> list[dict]:
     cached = JWKS_CACHE.get(jwks_url)
     if cached and (now - cached[0]) < JWKS_CACHE_TTL:
         return cached[1]
-    keys = await _fetch_jwks_keys(jwks_url)
-    JWKS_CACHE[jwks_url] = (now, keys)
-    return keys
+    try:
+        keys = await _fetch_jwks_keys(jwks_url)
+        JWKS_CACHE[jwks_url] = (now, keys)
+        return keys
+    except Exception as exc:
+        logger.warning("Clerk JWKS fetch failed (%s) — falling back to dev auth", exc)
+        return []
 
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> str:
+    if credentials is None and settings.dev_mode:
+        return "dev-user-id"
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -46,6 +55,8 @@ async def get_current_user(
     token = credentials.credentials
     jwks_keys = await _get_jwks_client()
     if not jwks_keys:
+        if settings.dev_mode:
+            return "dev-user-id"
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="JWKS configuration missing",

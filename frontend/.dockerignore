@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.gitignore
+.env
+.env.local
+*.log
+Dockerfile
+tsconfig.tsbuildinfo
+package-lock.json
+README.md
+FRONTEND_AUDIT_REPORT.md
+__tests__
+.eslintcache

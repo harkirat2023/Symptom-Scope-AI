@@ -57,10 +57,11 @@ function authHeaders(token?: string): Record<string, string> {
 
 export async function getRiskScore(
   token?: string
-): Promise<RiskScoreResponse> {
+): Promise<RiskScoreResponse | null> {
   const res = await fetch(`${API_URL}/api/v1/risk-score`, {
     headers: authHeaders(token),
   });
+  if (res.status === 404) return null;
   if (!res.ok) throw new Error("Failed to fetch risk score");
   return res.json();
 }

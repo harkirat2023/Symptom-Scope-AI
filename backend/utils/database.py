@@ -50,6 +50,13 @@ async def ensure_indexes():
     user_health_profiles = db["user_health_profiles"]
     await user_health_profiles.create_index("userId", unique=True)
 
+    from repositories.doctor_repository import ensure_indexes as doctor_indexes, seed_doctors
+    from repositories.hospital_repository import ensure_indexes as hospital_indexes, seed_hospitals
+    await doctor_indexes()
+    await hospital_indexes()
+    await seed_doctors()
+    await seed_hospitals()
+
 
 async def close_database():
     global _client, _db

@@ -20,7 +20,7 @@ describe("EmergencyActionPanel", () => {
     mockGetToken.mockResolvedValue("test-token")
     mockUseAuth.mockReturnValue({ getToken: mockGetToken })
     mockUseQuery.mockReturnValue({
-      data: { results: [], total: 0 },
+      data: { hospitals: [], total: 0 },
       isLoading: false,
     })
   })

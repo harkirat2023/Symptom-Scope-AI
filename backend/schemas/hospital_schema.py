@@ -1,19 +1,25 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from typing import Optional
 
 
 class HospitalResponse(BaseModel):
+    id: Optional[str] = None
     name: str
-    location: str
-    specialties: list[str]
-    rating: float = Field(ge=0, le=5)
-    distance_km: float = Field(ge=0)
-    phone: str
-    has_emergency: bool
-    bed_count: int = Field(ge=0)
+    address: str
+    location: str = ""
+    phone: str = ""
+    rating: float = 0.0
+    emergency: bool = False
+    specialties: list[str] = []
+    has_ambulance: bool = False
+    has_emergency_room: bool = False
+    latitude: float = 0.0
+    longitude: float = 0.0
+    image_url: str = ""
+    distance_km: Optional[float] = None
 
 
 class HospitalSearchResponse(BaseModel):
-    results: list[HospitalResponse]
+    hospitals: list[HospitalResponse]
     total: int
-    locations: list[str]
-    specialties: list[str]
+    locations: list[str] = []

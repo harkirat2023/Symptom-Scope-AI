@@ -26,6 +26,20 @@ async def lifespan(app: FastAPI):
     log_environment()
     get_database()
     await ensure_indexes()
+
+    # Auto-initialize RAG knowledge base if documents exist
+    try:
+        from services.rag_service import RAGService
+        rag = RAGService()
+        if not rag.has_documents():
+            count = rag.initialize_knowledge_base()
+            if count > 0:
+                logger.info("RAG knowledge base initialized with %d chunks", count)
+        else:
+            logger.info("RAG knowledge base already initialized")
+    except Exception as e:
+        logger.warning("RAG initialization skipped: %s", e)
+
     await reminder_scheduler.start()
     logger.info("Application startup complete")
     yield
@@ -88,8 +102,14 @@ async def add_security_headers(request: Request, call_next):
     else:
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev; "
-            "connect-src 'self' https://*.clerk.accounts.dev http://localhost:*;"
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://us-assets.i.posthog.com; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+            "font-src 'self' data: https://fonts.gstatic.com; "
+            "img-src 'self' data: blob: https://img.clerk.com; "
+            "connect-src 'self' https://*.clerk.accounts.dev http://localhost:* https://us-assets.i.posthog.com https://us.i.posthog.com; "
+            "worker-src 'self' blob:; "
+            "base-uri 'self'; "
+            "form-action 'self'"
         )
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
@@ -112,4 +132,37 @@ app.include_router(risk_score.router, prefix="/api/v1", tags=["Risk Score"])
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "version": "1.0.0"}
+    from services.rag_service import RAGService
+    from utils.database import get_database
+    from pathlib import Path
+
+    db_ok = False
+    try:
+        db = get_database()
+        db.command("ping")
+        db_ok = True
+    except Exception:
+        pass
+
+    ml_ok = all(
+        (Path(__file__).parent / f"ml/models/{m}").exists()
+        for m in ["decision_tree_v1.pkl", "random_forest_v1.pkl", "naive_bayes_v1.pkl"]
+    )
+
+    rag_stats = {"initialized": False}
+    try:
+        rag = RAGService()
+        rag_stats = rag.get_knowledge_stats()
+    except Exception:
+        pass
+
+    return {
+        "status": "healthy",
+        "version": "1.0.0",
+        "components": {
+            "database": "connected" if db_ok else "unreachable",
+            "ml_models": "loaded" if ml_ok else "missing",
+            "gemini_api": "configured" if settings.gemini_api_key else "not configured",
+            "rag_knowledge_base": "initialized" if rag_stats.get("initialized") else "empty",
+        },
+    }

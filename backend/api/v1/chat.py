@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel
 from schemas.chat_schema import (
     ChatSessionCreate,
     ChatSessionResponse,
@@ -7,11 +8,33 @@ from schemas.chat_schema import (
     MessageSend,
 )
 from services.chat_service import ChatService
+from services.rag_service import RAGService
+from services.llm_service import LLMService
 from repositories.chat_repository import ChatRepository
 from auth.dependency import get_current_user
 from utils.rate_limit import limiter
 
 router = APIRouter()
+
+
+class ExplainRequest(BaseModel):
+    disease: str
+    confidence: float
+    severity: str
+    symptoms: list[str] = []
+    precautions: list[str] = []
+    alternatives: list[str] = []
+
+
+class FollowUpRequest(BaseModel):
+    disease: str
+    confidence: float
+    severity: str
+    symptoms: list[str] = []
+
+
+class MedicalQuestion(BaseModel):
+    question: str
 
 
 @router.post("/chat/session", response_model=ChatSessionResponse)
@@ -106,11 +129,20 @@ async def send_message(
 
     history = await chat_repository.get_session_messages(input_data.session_id)
 
-    response = await chat_service.process_message(
-        input_data.content,
-        history,
-        prediction_context=session.get("predictionContext"),
-    )
+    try:
+        response = await chat_service.process_message(
+            input_data.content,
+            history,
+            prediction_context=session.get("predictionContext"),
+        )
+    except Exception as e:
+        _logger.warning("Chat message processing failed: %s", e)
+        from services.llm_service import LLMService as LLMServiceCls
+        response = await _with_llm_graceful(LLMServiceCls(), "chat",
+            message=input_data.content,
+            history=history,
+            prediction_context=session.get("predictionContext"),
+        )
 
     assistant_msg = await chat_repository.add_message(
         input_data.session_id, "assistant", response
@@ -153,3 +185,98 @@ async def get_messages(
         )
         for m in messages
     ]
+
+
+import logging
+_logger = logging.getLogger("symptomscope.api.chat")
+
+
+async def _with_llm_graceful(llm_service: LLMService, method_name: str, **kwargs):
+    """Call an LLM method with graceful fallback on error."""
+    from utils.settings import settings
+    if not settings.gemini_api_key:
+        msg = "The AI assistant is not configured. Please set GEMINI_API_KEY to enable AI features."
+        if method_name in ("explain_prediction",):
+            return msg
+        if method_name in ("generate_follow_up_questions",):
+            return ["Please consult a healthcare professional for personalized follow-up questions."]
+        return {"message": msg}
+    try:
+        method = getattr(llm_service, method_name)
+        return await method(**kwargs)
+    except RuntimeError:
+        return "The AI assistant is currently unavailable. Please try again later."
+    except Exception as e:
+        _logger.warning("LLM call failed (%s): %s", method_name, e)
+        return "I'm sorry, I couldn't process that request right now. Please try again."
+
+
+@router.post("/chat/explain")
+@limiter.limit("10/minute")
+async def explain_prediction(
+    request: Request,
+    input_data: ExplainRequest,
+    _user_id: str = Depends(get_current_user),
+    llm_service: LLMService = Depends(),
+):
+    result = await _with_llm_graceful(llm_service, "explain_prediction",
+        disease=input_data.disease,
+        confidence=input_data.confidence,
+        severity=input_data.severity,
+        symptoms=input_data.symptoms,
+        precautions=input_data.precautions,
+        alternatives=input_data.alternatives,
+    )
+    return {"explanation": result}
+
+
+@router.post("/chat/follow-up")
+@limiter.limit("10/minute")
+async def follow_up_questions(
+    request: Request,
+    input_data: FollowUpRequest,
+    _user_id: str = Depends(get_current_user),
+    llm_service: LLMService = Depends(),
+):
+    result = await _with_llm_graceful(llm_service, "generate_follow_up_questions",
+        disease=input_data.disease,
+        confidence=input_data.confidence,
+        severity=input_data.severity,
+        symptoms=input_data.symptoms,
+    )
+    return {"follow_up_questions": result if isinstance(result, list) else [result]}
+
+
+@router.post("/chat/ask")
+@limiter.limit("10/minute")
+async def ask_medical_question(
+    request: Request,
+    input_data: MedicalQuestion,
+    _user_id: str = Depends(get_current_user),
+    llm_service: LLMService = Depends(),
+):
+    from utils.settings import settings as app_settings
+    if not app_settings.gemini_api_key:
+        return {"answer": "The AI assistant is not configured. Please set GEMINI_API_KEY to enable AI features.", "rag_source": False}
+    try:
+        rag = RAGService()
+        answer = await rag.answer_with_rag(input_data.question, llm_service)
+        return {"answer": answer, "rag_source": rag.has_documents()}
+    except Exception as e:
+        _logger.warning("RAG ask failed: %s", e)
+        result = await _with_llm_graceful(llm_service, "answer_medical_question", question=input_data.question)
+        return {"answer": result, "rag_source": False}
+
+
+@router.post("/chat/ask/basic")
+@limiter.limit("10/minute")
+async def ask_medical_question_basic(
+    request: Request,
+    input_data: MedicalQuestion,
+    _user_id: str = Depends(get_current_user),
+    llm_service: LLMService = Depends(),
+):
+    result = await _with_llm_graceful(llm_service, "answer_medical_question",
+        question=input_data.question,
+    )
+    return {"answer": result}

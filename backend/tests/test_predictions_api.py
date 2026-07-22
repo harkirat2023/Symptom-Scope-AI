@@ -86,7 +86,7 @@ def test_doctors_endpoint(client):
     response = client.get("/api/v1/doctors")
     assert response.status_code == 200
     data = response.json()
-    assert "results" in data
+    assert "doctors" in data
     assert "total" in data
     assert "specialties" in data
     assert "locations" in data
@@ -97,7 +97,7 @@ def test_doctors_filter_by_specialty(client):
     response = client.get("/api/v1/doctors?specialty=Cardiologist")
     assert response.status_code == 200
     data = response.json()
-    assert all("Cardiologist" in d["specialty"] for d in data["results"])
+    assert all("Cardiologist" in d["specialty"] for d in data["doctors"])
 
 
 def test_symptoms_search(client):
@@ -119,7 +119,7 @@ def test_hospitals_endpoint(client):
     response = client.get("/api/v1/hospitals")
     assert response.status_code == 200
     data = response.json()
-    assert "results" in data
+    assert "hospitals" in data
     assert "total" in data
 
 
@@ -127,7 +127,7 @@ def test_hospitals_filter_emergency(client):
     response = client.get("/api/v1/hospitals?emergency_only=true")
     assert response.status_code == 200
     data = response.json()
-    assert all(h["has_emergency"] for h in data["results"])
+    assert all(h["emergency"] for h in data["hospitals"])
 
 
 def test_analytics_endpoint(client, mock_db):

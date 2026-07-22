@@ -15,13 +15,13 @@ async def search_hospitals(
     location: str | None = Query(None, max_length=100, description="Filter by city/location"),
     specialty: str | None = Query(None, max_length=100, description="Filter by medical specialty (e.g., Cardiologist)"),
     emergency_only: bool = Query(False, description="Show only hospitals with emergency services"),
-    sort_by: str | None = Query(None, description="Sort field: rating, distance_km, bed_count"),
+    sort_by: str | None = Query(None, description="Sort field: rating, distance_km"),
     sort_order: str = Query("desc", description="Sort direction: asc or desc"),
     limit: int = Query(20, ge=1, le=100, description="Max results"),
     _: str = Depends(get_current_user),
     hospital_service: HospitalService = Depends(),
 ):
-    results = hospital_service.search(
+    results = await hospital_service.search(
         query=q,
         location=location,
         specialty=specialty,
@@ -31,10 +31,9 @@ async def search_hospitals(
         limit=limit,
     )
     return HospitalSearchResponse(
-        results=[HospitalResponse(**h) for h in results],
+        hospitals=[HospitalResponse(**h) for h in results],
         total=len(results),
-        locations=hospital_service.get_locations(),
-        specialties=hospital_service.get_specialties(),
+        locations=await hospital_service.get_locations(),
     )
 
 
@@ -45,4 +44,4 @@ async def get_hospital_locations(
     _: str = Depends(get_current_user),
     hospital_service: HospitalService = Depends(),
 ):
-    return hospital_service.get_locations()
+    return await hospital_service.get_locations()

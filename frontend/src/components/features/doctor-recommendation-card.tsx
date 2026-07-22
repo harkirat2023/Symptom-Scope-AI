@@ -23,8 +23,8 @@ export function DoctorRecommendationCard({ doctor }: DoctorRecommendationCardPro
   return (
     <Card className="flex items-start gap-4 p-4">
       <Avatar className="size-12 shrink-0">
-        {doctor.photo_url ? (
-          <AvatarImage src={doctor.photo_url} alt={`${doctor.name}'s photo`} />
+        {doctor.image_url ? (
+          <AvatarImage src={doctor.image_url} alt={`${doctor.name}'s photo`} />
         ) : null}
         <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
           {getInitials(doctor.name)}
@@ -47,11 +47,11 @@ export function DoctorRecommendationCard({ doctor }: DoctorRecommendationCardPro
           </span>
           <span className="flex items-center gap-1">
             <MapPinIcon className="size-3.5" />
-            {doctor.distance_km.toFixed(1)} km
+            {doctor.distance_km?.toFixed(1)} km
           </span>
           <span className="flex items-center gap-1">
             <CalendarIcon className="size-3.5" />
-            {doctor.availability}
+            {doctor.availability?.join(", ") || "Available"}
           </span>
         </div>
       </div>

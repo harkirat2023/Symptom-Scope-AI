@@ -45,9 +45,9 @@ function HospitalCard({ hospital }: { hospital: HospitalResponse }) {
             {hospital.rating.toFixed(1)}
           </span>
           <span className="text-muted-foreground">
-            {hospital.distance_km.toFixed(1)} km
+            {hospital.distance_km?.toFixed(1)} km
           </span>
-          {hospital.has_emergency && (
+          {hospital.emergency && (
             <Badge variant="outline" className="text-destructive border-destructive/40 text-[10px] px-1.5 py-0">
               24/7 Emergency
             </Badge>
@@ -143,8 +143,8 @@ export function EmergencyActionPanel({ predictedDisease }: EmergencyActionPanelP
                   </div>
                 </div>
               ))
-            ) : hospitalsData && hospitalsData.results.length > 0 ? (
-              hospitalsData.results.map((hospital) => (
+            ) : hospitalsData && hospitalsData.hospitals.length > 0 ? (
+              hospitalsData.hospitals.map((hospital) => (
                 <HospitalCard key={hospital.name} hospital={hospital} />
               ))
             ) : (

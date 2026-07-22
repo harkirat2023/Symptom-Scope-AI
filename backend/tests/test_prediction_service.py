@@ -8,34 +8,47 @@ class TestPredictionService:
         self.service = PredictionService()
 
     def _mock_models(self):
-        dt_mock = MagicMock()
-        rf_mock = MagicMock()
+        dt_mock = MagicMock(spec=["predict_proba", "n_features_in_", "n_classes_"])
+        rf_mock = MagicMock(spec=["predict_proba", "feature_importances_", "n_features_in_", "n_classes_"])
         le_mock = MagicMock()
         cols_mock = ["fever", "cough", "headache", "fatigue"]
 
+        dt_mock.n_features_in_ = 4
+        dt_mock.n_classes_ = 3
+        rf_mock.n_features_in_ = 4
+        rf_mock.n_classes_ = 3
         dt_mock.predict_proba.return_value = np.array([[0.2, 0.5, 0.3]])
         rf_mock.predict_proba.return_value = np.array([[0.1, 0.6, 0.3]])
         rf_mock.feature_importances_ = np.array([0.4, 0.3, 0.2, 0.1])
+        le_mock.classes_ = np.array(["Influenza", "Common Cold", "Migraine"])
         le_mock.inverse_transform.return_value = np.array(["Influenza", "Common Cold", "Migraine"])
+        le_mock.transform.return_value = np.array([0])
 
         return dt_mock, rf_mock, le_mock, cols_mock
 
-    @patch("services.prediction_service._get_model")
-    def test_predict_returns_prediction_result(self, mock_get_model):
+    @patch("services.prediction_service.get_decision_tree")
+    @patch("services.prediction_service.get_random_forest")
+    @patch("services.prediction_service.get_naive_bayes")
+    @patch("services.prediction_service.get_label_encoder")
+    @patch("services.prediction_service.get_symptom_columns")
+    @patch("services.prediction_service.get_rf_feature_importances")
+    def test_predict_returns_prediction_result(
+        self, mock_importances, mock_cols, mock_le, mock_nb, mock_rf, mock_dt
+    ):
         dt, rf, le, cols = self._mock_models()
+        nb_mock = MagicMock()
+        nb_mock.n_features_in_ = 4
+        nb_mock.n_classes_ = 3
+        nb_mock.predict_proba.return_value = np.array([[0.3, 0.4, 0.3]])
 
-        def side_effect(name):
-            mapping = {
-                "decision_tree_v1.pkl": dt,
-                "random_forest_v1.pkl": rf,
-                "label_encoder_v1.pkl": le,
-                "symptom_columns_v1.pkl": cols,
-            }
-            return mapping[name]
+        mock_dt.return_value = dt
+        mock_rf.return_value = rf
+        mock_nb.return_value = nb_mock
+        mock_le.return_value = le
+        mock_cols.return_value = cols
+        mock_importances.return_value = np.array([0.4, 0.3, 0.2, 0.1])
 
-        mock_get_model.side_effect = side_effect
-
-        encoded = np.array([1, 1, 0, 0])
+        encoded = np.array([[1, 1, 1, 0]])
         result = self.service.predict(encoded)
 
         assert result.primary_prediction == "Influenza"

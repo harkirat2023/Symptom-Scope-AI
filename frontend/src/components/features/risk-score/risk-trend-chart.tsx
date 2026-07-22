@@ -65,8 +65,8 @@ export default function RiskTrendChart({
               borderRadius: 8,
               border: "1px solid #e5e7eb",
             }}
-            formatter={(value: number) => [`${value}`, "Score"]}
-            labelFormatter={(label: string) => `Date: ${label}`}
+            formatter={(value) => [`${value}`, "Score"]}
+            labelFormatter={(label) => `Date: ${label}`}
           />
           <Line
             type="monotone"

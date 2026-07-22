@@ -1,39 +1,28 @@
 import numpy as np
-import joblib
-from pathlib import Path
 from threading import Lock
-
-
-_models_path = Path(__file__).parent.parent / "ml" / "models"
+from services.model_registry import (
+    get_random_forest,
+    get_symptom_columns,
+    get_label_encoder,
+)
 
 
 class ExplainabilityService:
     def __init__(self):
-        self._random_forest = None
-        self._symptom_columns = None
-        self._label_encoder = None
         self._explainer = None
         self._lock = Lock()
 
     @property
     def random_forest(self):
-        if self._random_forest is None:
-            self._random_forest = joblib.load(_models_path / "random_forest_v1.pkl")
-        return self._random_forest
+        return get_random_forest()
 
     @property
     def symptom_columns(self):
-        if self._symptom_columns is None:
-            self._symptom_columns = joblib.load(
-                _models_path / "symptom_columns_v1.pkl"
-            )
-        return self._symptom_columns
+        return get_symptom_columns()
 
     @property
     def label_encoder(self):
-        if self._label_encoder is None:
-            self._label_encoder = joblib.load(_models_path / "label_encoder_v1.pkl")
-        return self._label_encoder
+        return get_label_encoder()
 
     @property
     def explainer(self):

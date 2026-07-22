@@ -1,79 +1,17 @@
-from schemas.doctor_schema import DoctorResponse
-from services.search_service import score_and_sort, filter_by_field, compute_relevance
-from services.disease_registry import get_specialist
+"""Doctor service — now backed by MongoDB repository."""
 
-DOCTOR_DATABASE: list[dict] = [
-    {
-        "name": "Dr. Sharma",
-        "specialty": "General Physician",
-        "location": "Ludhiana",
-        "rating": 4.5,
-        "distance_km": 2.3,
-        "availability": "Today",
-    },
-    {
-        "name": "Dr. Singh",
-        "specialty": "Pulmonologist",
-        "location": "Ludhiana",
-        "rating": 4.8,
-        "distance_km": 3.1,
-        "availability": "Tomorrow",
-    },
-    {
-        "name": "Dr. Patel",
-        "specialty": "Cardiologist",
-        "location": "Amritsar",
-        "rating": 4.7,
-        "distance_km": 5.0,
-        "availability": "Today",
-    },
-    {
-        "name": "Dr. Kaur",
-        "specialty": "General Physician",
-        "location": "Patiala",
-        "rating": 4.3,
-        "distance_km": 1.8,
-        "availability": "Today",
-    },
-    {
-        "name": "Dr. Verma",
-        "specialty": "Neurologist",
-        "location": "Jalandhar",
-        "rating": 4.6,
-        "distance_km": 4.2,
-        "availability": "In 2 days",
-    },
-    {
-        "name": "Dr. Gupta",
-        "specialty": "Gastroenterologist",
-        "location": "Ludhiana",
-        "rating": 4.7,
-        "distance_km": 2.8,
-        "availability": "Today",
-    },
-    {
-        "name": "Dr. Aggarwal",
-        "specialty": "Infectious Disease Specialist",
-        "location": "Amritsar",
-        "rating": 4.6,
-        "distance_km": 4.5,
-        "availability": "Tomorrow",
-    },
-    {
-        "name": "Dr. Kapoor",
-        "specialty": "Allergist",
-        "location": "Jalandhar",
-        "rating": 4.4,
-        "distance_km": 3.5,
-        "availability": "In 2 days",
-    },
-]
+from services.search_service import compute_relevance
+from services.disease_registry import get_specialist
+from repositories.doctor_repository import DoctorRepository
 
 AVAILABILITY_ORDER = {"Today": 0, "Tomorrow": 1, "In 2 days": 2}
 
 
 class DoctorService:
-    def get_recommendations(
+    def __init__(self):
+        self._repo = DoctorRepository()
+
+    async def get_recommendations(
         self,
         disease: str | None = None,
         specialty: str | None = None,
@@ -83,31 +21,31 @@ class DoctorService:
         sort_order: str = "desc",
         limit: int = 50,
     ) -> list[dict]:
-        if not DOCTOR_DATABASE:
-            return []
+        doctors = await self._repo.find_all(
+            specialty=specialty,
+            location=location,
+            query=query,
+            limit=limit * 3,
+        )
 
-        results = list(DOCTOR_DATABASE)
+        if not doctors:
+            return []
 
         target_specialty = specialty
         if disease and not target_specialty:
             target_specialty = get_specialist(disease)
 
-        if specialty:
-            results = [d for d in results if specialty.lower() in d["specialty"].lower()]
-        if location:
-            results = [d for d in results if location.lower() in d["location"].lower()]
-
         scored_doctors: list[tuple[float, dict]] = []
-        for doctor in results:
+        for doctor in doctors:
             specialty_score = 0.0
             location_score = 0.0
             rating_score = 0.0
 
             if target_specialty:
-                specialty_score = compute_relevance(target_specialty, doctor["specialty"])
+                specialty_score = compute_relevance(target_specialty, doctor.get("specialty", ""))
 
             if location:
-                location_score = compute_relevance(location, doctor["location"])
+                location_score = compute_relevance(location, doctor.get("location", ""))
 
             rating_score = doctor.get("rating", 0) / 5.0
 
@@ -143,7 +81,7 @@ class DoctorService:
         else:
             scored_doctors.sort(key=lambda x: (-x[0], x[1].get("rating", 0)))
 
-        ranked = [doc for _, doc in scored_doctors]
+        ranked = [self._serialize(doc) for _, doc in scored_doctors]
 
         if location and not any(compute_relevance(location, d["location"]) > 0.5 for d in ranked[:5]):
             nearby = [d for d in ranked if compute_relevance(location, d["location"]) > 0.3]
@@ -152,37 +90,36 @@ class DoctorService:
 
         return ranked[:limit]
 
-    def get_specialty_for_disease(self, disease: str) -> str:
+    async def get_specialty_for_disease(self, disease: str) -> str:
         return get_specialist(disease)
 
-    def get_specialties(self) -> list[str]:
-        seen: set[str] = set()
-        return [s for s in (d["specialty"] for d in DOCTOR_DATABASE) if not (s in seen or seen.add(s))]
+    async def get_specialties(self) -> list[str]:
+        return await self._repo.get_specialties()
 
-    def get_locations(self) -> list[str]:
-        seen: set[str] = set()
-        return [l for l in (d["location"] for d in DOCTOR_DATABASE) if not (l in seen or seen.add(l))]
+    async def get_locations(self) -> list[str]:
+        return await self._repo.get_locations()
 
-    def explain_recommendation(self, doctor_name: str, disease: str | None = None) -> str:
+    async def explain_recommendation(self, doctor_name: str, disease: str | None = None) -> str:
         if not doctor_name or not doctor_name.strip():
             return ""
-        doctor = next(
-            (d for d in DOCTOR_DATABASE if d["name"].lower() == doctor_name.lower()),
-            None,
-        )
-        if not doctor:
-            return ""
         parts = [
-            f"{doctor['name']} is a {doctor['specialty']} "
-            f"located in {doctor['location']} with a {doctor['rating']}/5 rating."
+            f"{doctor_name} is a recommended healthcare professional."
         ]
         if disease:
-            expected = self.get_specialty_for_disease(disease)
-            match = "matches" if doctor["specialty"].lower() == expected.lower() else "is related to"
-            parts.append(f"The recommended specialist for {disease} is {expected}, and {doctor['name']} {match} your condition.")
-        availability = doctor.get("availability", "")
-        if availability == "Today":
-            parts.append("They are available today and can see you now.")
-        elif availability:
-            parts.append(f"They are available {availability.lower()}.")
+            expected = await self.get_specialty_for_disease(disease)
+            parts.append(f"The recommended specialist for {disease} is {expected}.")
         return " ".join(parts)
+
+    @staticmethod
+    def _serialize(doc: dict) -> dict:
+        return {
+            "name": doc.get("name", ""),
+            "specialty": doc.get("specialty", ""),
+            "location": doc.get("location", ""),
+            "rating": float(doc.get("rating", 0)),
+            "distance_km": float(doc.get("distance_km", 0)),
+            "availability": doc.get("availability") if isinstance(doc.get("availability"), list) else [doc.get("availability", "")] if doc.get("availability") else [],
+            "phone": doc.get("phone", ""),
+            "hospital": doc.get("hospital", ""),
+            "experience_years": int(doc.get("experience_years", 0)),
+        }

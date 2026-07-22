@@ -1,6 +1,11 @@
-import json
-import httpx
-from utils.settings import settings
+"""
+Chat Service — uses LangChain + Gemini via LLMService.
+
+Preserves the exact same API contract as the previous implementation
+so no route changes are needed.
+"""
+
+from services.llm_service import LLMService
 
 SYSTEM_PROMPT_TEMPLATE = """You are a helpful health education assistant for SymptomScope AI.
 
@@ -26,54 +31,22 @@ Medical Disclaimer: This information is for educational purposes only."""
 
 
 class LlmClient:
+    """Compatibility wrapper — delegates to LLMService."""
+
     def __init__(self):
-        self.api_url = settings.llm_api_url
-        self.api_key = settings.llm_api_key
-        self.model = settings.llm_model or "gpt-3.5-turbo"
-        self.timeout = 15.0
+        self._service = LLMService()
 
     async def send_message(
         self, messages: list[dict], system_prompt: str
     ) -> str:
-        if not self.api_url or not self.api_key:
-            return (
-                "I'm sorry, the health assistant is not configured. "
-                "Please contact support to enable this feature."
-            )
-
-        full_messages = [{"role": "system", "content": system_prompt}]
-        full_messages.extend(messages)
-
-        try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                resp = await client.post(
-                    self.api_url,
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": self.model,
-                        "messages": full_messages,
-                        "max_tokens": 500,
-                        "temperature": 0.7,
-                    },
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                return data["choices"][0]["message"]["content"]
-        except httpx.TimeoutException:
-            return "I'm sorry, the response took too long. Please try again."
-        except Exception as e:
-            return (
-                "I apologize, but I encountered an error processing your request. "
-                "Please try again later."
-            )
+        user_content = messages[-1]["content"] if messages else ""
+        return await self._service.invoke(system_prompt, user_content)
 
 
 class ChatService:
     def __init__(self):
         self.llm_client = LlmClient()
+        self._llm = LLMService()
 
     def build_system_prompt(self, prediction_context: dict | None = None) -> str:
         if prediction_context:
@@ -160,3 +133,47 @@ class ChatService:
             "symptoms": symptoms or [],
             "precautions": precautions or [],
         }
+
+    # --- New: LLMService-powered features ---
+
+    async def explain_prediction(
+        self,
+        disease: str,
+        confidence: float,
+        severity: str,
+        symptoms: list[str],
+        precautions: list[str],
+        alternatives: list[str],
+    ) -> str:
+        return await self._llm.explain_prediction(
+            disease=disease,
+            confidence=confidence,
+            severity=severity,
+            symptoms=symptoms,
+            precautions=precautions,
+            alternatives=alternatives,
+        )
+
+    async def generate_follow_up_questions(
+        self,
+        disease: str,
+        confidence: float,
+        severity: str,
+        symptoms: list[str],
+    ) -> list[str]:
+        return await self._llm.generate_follow_up_questions(
+            disease=disease,
+            confidence=confidence,
+            severity=severity,
+            symptoms=symptoms,
+        )
+
+    async def answer_medical_question(
+        self,
+        question: str,
+        context: str | None = None,
+    ) -> str:
+        return await self._llm.answer_medical_question(
+            question=question,
+            context=context,
+        )

@@ -65,17 +65,24 @@ export interface ReportResponse {
 }
 
 export interface DoctorResponse {
+  id?: string | null;
   name: string;
   specialty: string;
   location: string;
   rating: number;
-  distance_km: number;
-  availability: string;
-  photo_url?: string | null;
+  distance_km?: number;
+  availability: string[];
+  phone?: string;
+  hospital?: string;
+  experience_years?: number;
+  available?: boolean;
+  consultation_fee?: number;
+  image_url?: string;
+  bio?: string;
 }
 
 export interface DoctorSearchResponse {
-  results: DoctorResponse[];
+  doctors: DoctorResponse[];
   total: number;
   specialties: string[];
   locations: string[];
@@ -95,21 +102,26 @@ export interface SymptomSearchResponse {
 }
 
 export interface HospitalResponse {
+  id?: string | null;
   name: string;
-  location: string;
+  address: string;
+  location?: string;
   specialties: string[];
   rating: number;
-  distance_km: number;
-  phone: string;
-  has_emergency: boolean;
-  bed_count: number;
+  distance_km?: number | null;
+  phone?: string;
+  emergency: boolean;
+  has_ambulance: boolean;
+  has_emergency_room?: boolean;
+  latitude?: number;
+  longitude?: number;
+  image_url?: string;
 }
 
 export interface HospitalSearchResponse {
-  results: HospitalResponse[];
+  hospitals: HospitalResponse[];
   total: number;
   locations: string[];
-  specialties: string[];
 }
 
 function authHeaders(token?: string): Record<string, string> {

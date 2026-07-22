@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
@@ -59,11 +59,11 @@ export function ReminderForm({
     register,
     handleSubmit,
     reset,
-    setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(formSchema) as any,
     defaultValues: editReminder
       ? {
           medicine_name: editReminder.medicine_name,
@@ -121,7 +121,8 @@ export function ReminderForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="medicine_name">Medicine Name</Label>
             <Input
@@ -152,22 +153,28 @@ export function ReminderForm({
 
           <div className="space-y-2">
             <Label htmlFor="frequency">Frequency</Label>
-            <Select
-              defaultValue={watch("frequency")}
-              onValueChange={(v: ReminderFrequency) =>
-                setValue("frequency", v)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select frequency" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="specific_days">Specific Days</SelectItem>
-                <SelectItem value="every_x_hours">Every X Hours</SelectItem>
-                <SelectItem value="as_needed">As Needed</SelectItem>
-              </SelectContent>
-            </Select>
+            <Controller
+              name="frequency"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => {
+                    if (v) field.onChange(v as ReminderFrequency);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="specific_days">Specific Days</SelectItem>
+                    <SelectItem value="every_x_hours">Every X Hours</SelectItem>
+                    <SelectItem value="as_needed">As Needed</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           <div className="flex gap-4">
@@ -200,10 +207,16 @@ export function ReminderForm({
                 Get email notifications
               </p>
             </div>
-            <Switch
-              id="email_reminder"
-              checked={watch("email_reminder")}
-              onCheckedChange={(v) => setValue("email_reminder", v)}
+            <Controller
+              name="email_reminder"
+              control={control}
+              render={({ field }) => (
+                <Switch
+                  id="email_reminder"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
             />
           </div>
 

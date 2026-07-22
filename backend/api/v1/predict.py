@@ -49,8 +49,8 @@ async def predict_symptoms(
     severity = severity_service.classify(disease, confidence)
     precautions = precaution_service.get_precautions(disease, severity)
     emergency = emergency_service.detect(disease, confidence, severity)
-    recommended_specialist = doctor_service.get_specialty_for_disease(disease)
-    doctor_recommendations_raw = doctor_service.get_recommendations(disease=disease, limit=3)
+    recommended_specialist = await doctor_service.get_specialty_for_disease(disease)
+    doctor_recommendations_raw = await doctor_service.get_recommendations(disease=disease, limit=3)
     doctor_recommendations = [DoctorResponse(**d) for d in doctor_recommendations_raw]
     confidence_info = prediction_service.get_confidence_info(confidence)
     explanation_summary = prediction_service.generate_explanation_summary(
