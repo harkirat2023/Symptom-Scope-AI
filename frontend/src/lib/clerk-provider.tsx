@@ -10,6 +10,10 @@ export function ClerkProvider({ children }: { children: ReactNode }) {
 
   return (
     <ClerkProviderBase
+      signInUrl="/auth/sign-in"
+      signUpUrl="/auth/sign-up"
+      afterSignInUrl="/dashboard"
+      afterSignUpUrl="/dashboard"
       __experimental_disableBotProtection
       appearance={{
         theme: isDark ? dark : undefined,

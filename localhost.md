@@ -19,8 +19,8 @@ docker-compose up --build
 
 When containers are healthy:
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:8000/docs
-- Backend health: http://localhost:8000/health
+- Backend API: http://localhost:8080/docs
+- Backend health: http://localhost:8080/health
 
 Stop it with:
 ```bash
@@ -50,11 +50,11 @@ At minimum you typically need (names may vary—check `backend/.env`):
 
 ### 2.4 Start the API
 ```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+uvicorn main:app --reload --host 0.0.0.0 --port 8080
 ```
 
 Open:
-- API docs: http://localhost:8000/docs
+- API docs: http://localhost:8080/docs
 
 ## 3) Run frontend only (Next.js)
 ### 3.1 Install dependencies

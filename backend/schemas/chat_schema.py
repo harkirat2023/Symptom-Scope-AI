@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 
 
@@ -7,15 +7,14 @@ class ChatSessionCreate(BaseModel):
 
 
 class ChatSessionResponse(BaseModel):
-    id: str = Field(alias="_id")
+    id: str = Field(validation_alias="_id")
     user_id: str
     started_at: str
     last_activity_at: str
     is_active: bool
     prediction_context: dict | None = None
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class MessageSend(BaseModel):
@@ -24,9 +23,9 @@ class MessageSend(BaseModel):
 
 
 class ChatMessageResponse(BaseModel):
-    id: str = Field(alias="_id")
+    id: str = Field(validation_alias="_id")
     session_id: str
-    role: str  # "user" | "assistant"
+    role: str
     content: str
     created_at: str
 

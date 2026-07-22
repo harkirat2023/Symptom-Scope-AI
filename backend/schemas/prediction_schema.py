@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from schemas.doctor_schema import DoctorResponse
 
@@ -39,7 +39,7 @@ class EmergencyInfo(BaseModel):
 
 
 class PredictionRecord(BaseModel):
-    id: str = Field(alias="_id")
+    id: str = Field(validation_alias="_id")
     user_id: str
     symptoms: list[str]
     prediction: str

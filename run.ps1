@@ -50,8 +50,8 @@ if (-not $mongoRunning) {
 $backendJob = Start-Job -Name "SymptomScope-Backend" -ScriptBlock {
     param($root)
     Set-Location -LiteralPath "$root\backend"
-    Write-Host "[Backend] Starting uvicorn on http://localhost:8000" -ForegroundColor Green
-    uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    Write-Host "[Backend] Starting uvicorn on http://localhost:8080" -ForegroundColor Green
+    uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 } -ArgumentList $Root
 
 # 3. Start Frontend
@@ -64,9 +64,9 @@ $frontendJob = Start-Job -Name "SymptomScope-Frontend" -ScriptBlock {
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
-Write-Host "  Backend:  http://localhost:8000" -ForegroundColor White
+Write-Host "  Backend:  http://localhost:8080" -ForegroundColor White
 Write-Host "  Frontend: http://localhost:3000" -ForegroundColor White
-Write-Host "  API Docs: http://localhost:8000/docs" -ForegroundColor White
+Write-Host "  API Docs: http://localhost:8080/docs" -ForegroundColor White
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Press Ctrl+C to stop all services." -ForegroundColor Yellow

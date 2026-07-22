@@ -1,13 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { motion } from "framer-motion";
 import { Activity, Lightbulb } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendIcon } from "@/components/shared/trend-icon";
 import { cn } from "@/lib/utils";
 import type { PredictionRecord, AnalyticsResponse } from "@/lib/api/predictions";
-import { HealthSummaryStrip } from "@/components/features/history/health-summary-strip";
+import { HealthSummaryBanner } from "@/components/features/dashboard/health-summary-banner";
 import { SummaryCharts } from "@/components/features/history/summary-charts";
 import { HistoryTimeline } from "@/components/features/history/history-timeline";
 
@@ -43,7 +42,7 @@ export default function HistoryChartContent({
   return (
     <>
       {analytics?.health_summary && (
-        <HealthSummaryStrip healthSummary={analytics.health_summary} />
+        <HealthSummaryBanner healthSummary={analytics.health_summary} />
       )}
 
       <SummaryCharts
@@ -110,12 +109,7 @@ export default function HistoryChartContent({
         </Card>
       )}
 
-      <HistoryTimeline
-        predictions={predictions}
-        analytics={analytics}
-        gridColor={gridColor}
-        textColor={textColor}
-      />
+      <HistoryTimeline predictions={predictions} />
     </>
   );
 }

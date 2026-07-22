@@ -11,7 +11,6 @@ import { useChatStore } from "@/lib/stores/chat-store";
 import {
   createChatSession,
   sendChatMessage,
-  getChatMessages,
 } from "@/lib/api/chat";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
@@ -27,14 +26,11 @@ export function ChatWidget() {
     predictionContext,
     error,
     setOpen,
-    toggle,
     setSession,
-    setMessages,
     addMessage,
     setLoading,
     setSending,
     setError,
-    reset,
   } = useChatStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -55,11 +51,11 @@ export function ChatWidget() {
       setError(null);
       try {
         const token = await getToken();
-        const session = await createChatSession(
+        const s = await createChatSession(
           undefined,
           token ?? undefined
         );
-        setSession(session);
+        setSession(s);
       } catch {
         setError("Could not start chat. Please try again.");
       } finally {
@@ -70,6 +66,7 @@ export function ChatWidget() {
     if (!session) {
       initSession();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const handleSend = async (content: string) => {
@@ -107,25 +104,9 @@ export function ChatWidget() {
     setOpen(false);
   };
 
-  const handleOpen = async () => {
+  const handleOpen = () => {
     setOpen(true);
     initializedRef.current = false;
-    if (!session) {
-      setLoading(true);
-      setError(null);
-      try {
-        const token = await getToken();
-        const newSession = await createChatSession(
-          undefined,
-          token ?? undefined
-        );
-        setSession(newSession);
-      } catch {
-        setError("Could not start chat.");
-      } finally {
-        setLoading(false);
-      }
-    }
   };
 
   return (

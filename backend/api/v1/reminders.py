@@ -49,7 +49,7 @@ async def create_reminder(
 @limiter.limit("10/minute")
 async def list_reminders(
     request: Request,
-    status: str | None = Query(None, regex="^(active|paused|completed)$"),
+    status: str | None = Query(None, pattern="^(active|paused|completed)$"),
     user_id: str = Depends(get_current_user),
     reminder_repository: ReminderRepository = Depends(),
 ):

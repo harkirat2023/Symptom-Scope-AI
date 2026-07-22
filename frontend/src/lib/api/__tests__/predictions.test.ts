@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 const mockFetch = vi.fn()
 globalThis.fetch = mockFetch
 
-const API_URL = "http://localhost:8000"
+const API_URL = "http://localhost:8080"
 
 beforeEach(() => {
   mockFetch.mockReset()

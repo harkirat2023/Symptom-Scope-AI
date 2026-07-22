@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Literal
 
 
@@ -14,7 +14,7 @@ class UserHealthProfile(BaseModel):
 
 
 class UserHealthProfileResponse(BaseModel):
-    id: str = Field(alias="_id")
+    id: str = Field(validation_alias="_id")
     user_id: str
     bmi: float | None = None
     exercise_frequency: int | None = None
@@ -24,8 +24,7 @@ class UserHealthProfileResponse(BaseModel):
     existing_conditions: list[str] = []
     updated_at: str
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class RiskFactorBreakdown(BaseModel):
@@ -41,7 +40,7 @@ class RiskFactorBreakdown(BaseModel):
 
 class RiskScoreResponse(BaseModel):
     current_score: float = Field(..., ge=0, le=100)
-    category: str  # "Low" | "Medium" | "High"
+    category: str
     breakdown: RiskFactorBreakdown
     last_prediction_id: str | None = None
     timestamp: str

@@ -13,12 +13,7 @@ import type { PredictionResponse } from "@/lib/api/predictions";
 import { EmergencyActionPanel } from "@/components/features/emergency-action-panel";
 import { DoctorRecommendationCard } from "@/components/features/doctor-recommendation-card";
 import RiskCategoryBadge from "@/components/features/risk-score/risk-category-badge";
-
-const severityColor: Record<string, string> = {
-  Mild: "bg-success/10 text-success border-success/20",
-  Moderate: "bg-warning/10 text-warning border-warning/20",
-  Severe: "bg-destructive/10 text-destructive border-destructive/20",
-};
+import { severityBadgeColors } from "@/components/shared/dashboard-types";
 
 interface PredictionResultsProps {
   prediction: PredictionResponse;
@@ -98,7 +93,7 @@ export function PredictionResults({ prediction, onReset }: PredictionResultsProp
               <Badge
                 className={cn(
                   "text-sm px-3 py-1",
-                  severityColor[prediction.severity] ?? ""
+                  severityBadgeColors[prediction.severity] ?? ""
                 )}
               >
                 {prediction.severity}

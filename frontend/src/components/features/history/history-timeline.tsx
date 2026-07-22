@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Search, Calendar, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,17 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { severityColorMap } from "@/components/shared/severity-badge";
-import type { PredictionRecord, AnalyticsResponse } from "@/lib/api/predictions";
+import { severityBadgeColors } from "@/components/shared/dashboard-types";
+import type { PredictionRecord } from "@/lib/api/predictions";
 
 interface HistoryTimelineProps {
   predictions: PredictionRecord[];
-  analytics: AnalyticsResponse | undefined;
-  gridColor: string;
-  textColor: string;
 }
 
-export function HistoryTimeline({ predictions, analytics, gridColor, textColor }: HistoryTimelineProps) {
+export function HistoryTimeline({ predictions }: HistoryTimelineProps) {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("timeline");
 
@@ -28,24 +25,6 @@ export function HistoryTimeline({ predictions, analytics, gridColor, textColor }
       p.prediction.toLowerCase().includes(search.toLowerCase()) ||
       p.symptoms.join(" ").toLowerCase().includes(search.toLowerCase())
   );
-
-  const { severityCounts, conditionCounts, symptomClusters } = useMemo(() => {
-    const sev: Record<string, number> = {};
-    const cond: Record<string, number> = {};
-    const symp: Record<string, number> = {};
-    for (const p of predictions) {
-      sev[p.severity] = (sev[p.severity] ?? 0) + 1;
-      cond[p.prediction] = (cond[p.prediction] ?? 0) + 1;
-      for (const s of p.symptoms) {
-        symp[s] = (symp[s] ?? 0) + 1;
-      }
-    }
-    return {
-      severityCounts: Object.entries(sev).map(([name, value]) => ({ name, value })),
-      conditionCounts: Object.entries(cond).sort(([, a], [, b]) => b - a).slice(0, 6).map(([name, value]) => ({ name, value })),
-      symptomClusters: Object.entries(symp).sort(([, a], [, b]) => b - a).slice(0, 8).map(([name, value]) => ({ name, value })),
-    };
-  }, [predictions]);
 
   return (
     <>
@@ -89,7 +68,7 @@ export function HistoryTimeline({ predictions, analytics, gridColor, textColor }
                         })}</span>
                       </div>
                     </div>
-                    <Badge className={cn("text-sm px-3 py-1", severityColorMap[p.severity] ?? "")}>
+                    <Badge className={cn("text-sm px-3 py-1", severityBadgeColors[p.severity] ?? "")}>
                       {p.severity}
                     </Badge>
                   </div>

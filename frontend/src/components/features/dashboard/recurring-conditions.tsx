@@ -34,7 +34,7 @@ export function RecurringConditions({ recurringConditions }: RecurringConditions
                   <p className="text-sm font-medium">{rc.disease}</p>
                   <p className="text-xs text-muted-foreground">
                     {rc.occurrences} {rc.occurrences === 1 ? "occurrence" : "occurrences"}
-                    {" · "}Last: {new Date(rc.last_detected).toLocaleDateString()}
+                    {" · "}Last: {new Date(rc.last_detected).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </p>
                 </div>
                 <Badge variant={

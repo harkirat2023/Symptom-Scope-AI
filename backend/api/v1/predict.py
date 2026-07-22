@@ -84,6 +84,11 @@ async def predict_symptoms(
         prediction=disease,
         confidence=confidence,
         severity=severity,
+        age=input_data.age,
+        gender=input_data.gender,
+        existing_conditions=input_data.existing_conditions,
+        symptom_duration=input_data.symptom_duration,
+        pain_level=input_data.pain_level,
     )
 
     invalidate_user_cache(user_id)

@@ -6,17 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { severityBadgeColors } from "@/components/shared/dashboard-types";
 import type { PredictionRecord } from "@/lib/api/predictions";
 
 interface SymptomTimelineProps {
   predictions: PredictionRecord[];
 }
-
-const severityBadgeColor: Record<string, string> = {
-  Mild: "bg-success/10 text-success border-success/20",
-  Moderate: "bg-warning/10 text-warning border-warning/20",
-  Severe: "bg-destructive/10 text-destructive border-destructive/20",
-};
 
 export function SymptomTimeline({ predictions }: SymptomTimelineProps) {
   if (predictions.length === 0) return null;
@@ -70,7 +65,7 @@ export function SymptomTimeline({ predictions }: SymptomTimelineProps) {
                       <Badge
                         className={cn(
                           "text-[10px] px-1.5 py-0",
-                          severityBadgeColor[record.severity] ?? ""
+                          severityBadgeColors[record.severity] ?? ""
                         )}
                       >
                         {record.severity}

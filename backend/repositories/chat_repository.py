@@ -73,7 +73,7 @@ class ChatRepository:
         message["_id"] = str(result.inserted_id)
 
         await _get_sessions_collection().update_one(
-            {"_id": message.get("_original_session_id") or session_id},
+            {"_id": session_id},
             {"$set": {"lastActivityAt": now}}
         )
         return message

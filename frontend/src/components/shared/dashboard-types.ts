@@ -16,4 +16,10 @@ export const severityColors: Record<string, string> = {
   Severe: "#ef4444",
 };
 
+export const severityBadgeColors: Record<string, string> = {
+  Mild: "bg-success/10 text-success border-success/20",
+  Moderate: "bg-warning/10 text-warning border-warning/20",
+  Severe: "bg-destructive/10 text-destructive border-destructive/20",
+};
+
 export const SEVERITY_ORDER = ["Severe", "Moderate", "Mild"];

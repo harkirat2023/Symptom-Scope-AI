@@ -50,7 +50,7 @@ async def get_risk_score(
 @limiter.limit("10/minute")
 async def get_risk_score_history(
     request: Request,
-    range: str = Query("6m", regex="^(1m|3m|6m|1y)$"),
+    range: str = Query("6m", pattern="^(1m|3m|6m|1y)$"),
     user_id: str = Depends(get_current_user),
     risk_score_repository: RiskScoreRepository = Depends(),
 ):

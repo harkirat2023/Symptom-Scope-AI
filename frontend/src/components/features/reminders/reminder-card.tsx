@@ -5,7 +5,6 @@ import { useAuth } from "@clerk/nextjs";
 import { Pill, Clock, Check, X, Edit2, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { ReminderStatusBadge } from "./reminder-status-badge";
 import { logReminderStatus, deleteReminder } from "@/lib/api/reminders";
 import { useReminderStore } from "@/lib/stores/reminder-store";
@@ -19,7 +18,7 @@ interface ReminderCardProps {
 
 export function ReminderCard({ reminder, onEdit }: ReminderCardProps) {
   const { getToken } = useAuth();
-  const { updateReminder, removeReminder } = useReminderStore();
+  const { removeReminder } = useReminderStore();
   const [logging, setLogging] = useState<string | null>(null);
 
   const handleLog = async (status: "taken" | "missed") => {

@@ -3,7 +3,7 @@
 import nextDynamic from "next/dynamic";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/lib/stores/theme-store";
 import {
   FileText,
   AlertCircle,
@@ -23,10 +23,8 @@ const ReportsChartContent = nextDynamic(
 
 export default function ReportsPage() {
   const { userId, getToken } = useAuth();
-  const { resolvedTheme } = useTheme();
+  const { isDark } = useTheme();
   const selectedRange = useDashboardStore((s) => s.selectedTimeRange);
-
-  const isDark = resolvedTheme === "dark";
 
   const { data: report, isLoading, error } = useQuery({
     queryKey: ["report", userId],

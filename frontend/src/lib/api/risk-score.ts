@@ -1,4 +1,4 @@
-const BASE = `${process.env.NEXT_PUBLIC_API_URL}/api/v1`;
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export interface UserHealthProfile {
   bmi?: number;
@@ -58,7 +58,7 @@ function authHeaders(token?: string): Record<string, string> {
 export async function getRiskScore(
   token?: string
 ): Promise<RiskScoreResponse> {
-  const res = await fetch(`${BASE}/risk-score`, {
+  const res = await fetch(`${API_URL}/api/v1/risk-score`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error("Failed to fetch risk score");
@@ -69,7 +69,7 @@ export async function getRiskScoreHistory(
   range = "6m",
   token?: string
 ): Promise<RiskScoreHistoryResponse> {
-  const res = await fetch(`${BASE}/risk-score/history?range=${range}`, {
+  const res = await fetch(`${API_URL}/api/v1/risk-score/history?range=${range}`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error("Failed to fetch risk score history");
@@ -79,7 +79,7 @@ export async function getRiskScoreHistory(
 export async function getRiskTips(
   token?: string
 ): Promise<RiskTipsResponse> {
-  const res = await fetch(`${BASE}/risk-score/tips`, {
+  const res = await fetch(`${API_URL}/api/v1/risk-score/tips`, {
     headers: authHeaders(token),
   });
   if (!res.ok) throw new Error("Failed to fetch risk tips");
@@ -90,7 +90,7 @@ export async function updateHealthProfile(
   data: UserHealthProfile,
   token?: string
 ): Promise<UserHealthProfileResponse> {
-  const res = await fetch(`${BASE}/risk-score/profile`, {
+  const res = await fetch(`${API_URL}/api/v1/risk-score/profile`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -105,7 +105,7 @@ export async function updateHealthProfile(
 export async function getHealthProfile(
   token?: string
 ): Promise<UserHealthProfileResponse | null> {
-  const res = await fetch(`${BASE}/risk-score/profile`, {
+  const res = await fetch(`${API_URL}/api/v1/risk-score/profile`, {
     headers: authHeaders(token),
   });
   if (res.status === 404) return null;

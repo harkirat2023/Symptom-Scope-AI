@@ -7,6 +7,7 @@ import { PostHogProvider } from "@/lib/posthog-provider";
 import { SentryProvider } from "@/lib/sentry-provider";
 import { ThemeInit } from "@/components/features/theme-init";
 import { ChatWidget } from "@/components/features/chat/chat-widget";
+import { Toaster } from "@/components/ui/sonner";
 
 const KeyboardShortcutsHelp = dynamic(
   () => import("@/components/features/keyboard-shortcuts").then((m) => m.KeyboardShortcutsHelp),
@@ -20,6 +21,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <SentryProvider>
           <PostHogProvider>
             <ThemeInit />
+            <Toaster />
             <KeyboardShortcutsHelp />
             {children}
             <ChatWidget />

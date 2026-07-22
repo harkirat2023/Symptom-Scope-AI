@@ -4,7 +4,7 @@ import nextDynamic from "next/dynamic";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/lib/stores/theme-store";
 import {
   Stethoscope,
   Activity,
@@ -36,17 +36,16 @@ const DashboardAnalyticsContent = nextDynamic(
 
 export default function DashboardPage() {
   const { userId, getToken } = useAuth();
-  const { resolvedTheme } = useTheme();
+  const { isDark } = useTheme();
   const selectedRange = useDashboardStore((s) => s.selectedTimeRange);
   const setRange = useDashboardStore((s) => s.setSelectedTimeRange);
-
-  const isDark = resolvedTheme === "dark";
 
   const { data: report } = useQuery({
     queryKey: ["report", userId],
     queryFn: async () => {
       const token = await getToken();
-      return fetchUserReports(userId!, token ?? undefined);
+      if (!userId) return null;
+      return fetchUserReports(userId, token ?? undefined);
     },
     enabled: !!userId,
   });
@@ -59,7 +58,8 @@ export default function DashboardPage() {
     queryKey: ["analytics", userId, selectedRange],
     queryFn: async () => {
       const token = await getToken();
-      return fetchAnalytics(userId!, selectedRange, token ?? undefined);
+      if (!userId) return null;
+      return fetchAnalytics(userId, selectedRange, token ?? undefined);
     },
     enabled: !!userId,
   });

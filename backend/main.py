@@ -10,15 +10,12 @@ from utils.database import get_database, close_database, ensure_indexes
 from utils.settings import settings
 from utils.exceptions import global_exception_handler
 from utils.rate_limit import limiter
-from utils.security_headers import security_headers_middleware
 from utils.logging_config import setup_logging
 from utils.env_check import log_environment
 from utils.request_logger import request_logging_middleware
-from utils.monitoring import init_sentry
 from services.reminder_service import scheduler as reminder_scheduler
 
 setup_logging()
-init_sentry()
 logger = logging.getLogger("symptomscope")
 
 MAX_REQUEST_SIZE = 1024 * 100  # 100 KB
@@ -65,11 +62,38 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-app.middleware("http")(security_headers_middleware)
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+
+    path = request.url.path
+
+    if path.startswith(("/docs", "/redoc", "/openapi.json")):
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "img-src 'self' data: https://fastapi.tiangolo.com https://cdn.jsdelivr.net; "
+            "font-src 'self' data:; "
+            "connect-src 'self' http://localhost:* ws://localhost:*; "
+            "worker-src 'self' blob:; "
+            "frame-ancestors 'self'; "
+            "base-uri 'self'; "
+            "form-action 'self'"
+        )
+    else:
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev; "
+            "connect-src 'self' https://*.clerk.accounts.dev http://localhost:*;"
+        )
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+    return response
 app.middleware("http")(request_logging_middleware)
 
 app.add_exception_handler(Exception, global_exception_handler)

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
-import { ArrowRight, Shield, Brain, Activity, Heart, TrendingUp, AlertTriangle, Stethoscope, CalendarDays } from "lucide-react";
+import { ArrowRight, Shield, Brain, Activity, Heart, TrendingUp, CalendarDays } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 

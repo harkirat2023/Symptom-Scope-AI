@@ -22,6 +22,11 @@ class PredictionRepository:
         prediction: str,
         confidence: float,
         severity: str,
+        age: int | None = None,
+        gender: str | None = None,
+        existing_conditions: list[str] | None = None,
+        symptom_duration: str | None = None,
+        pain_level: int | None = None,
     ) -> PredictionRecord:
         record = {
             "userId": user_id,
@@ -29,6 +34,11 @@ class PredictionRepository:
             "prediction": prediction,
             "confidence": confidence,
             "severity": severity,
+            "age": age,
+            "gender": gender,
+            "existingConditions": existing_conditions or [],
+            "symptomDuration": symptom_duration,
+            "painLevel": pain_level,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         collection = _get_collection()

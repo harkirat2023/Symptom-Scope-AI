@@ -1,10 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 export const dynamic = "force-dynamic";
-import { useState } from "react";
+
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -22,7 +22,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { predictSymptoms, type PredictionResponse } from "@/lib/api/predictions";
 import { EmergencyActionPanel } from "@/components/features/emergency-action-panel";
 import { DoctorRecommendationCard } from "@/components/features/doctor-recommendation-card";
-import { cn } from "@/lib/utils";
 
 export default function ResultsPage() {
   return (
@@ -78,12 +77,6 @@ function ResultsContent() {
       errorRef.current.focus();
     }
   }, [error]);
-
-  const severityColor: Record<string, string> = {
-    Mild: "bg-success/10 text-success border-success/20",
-    Moderate: "bg-warning/10 text-warning border-warning/20",
-    Severe: "bg-destructive/10 text-destructive border-destructive/20",
-  };
 
   if (!symptoms.length) {
     return (
@@ -173,7 +166,7 @@ function ResultsContent() {
                   </div>
                 </div>
 
-                <EmergencyActionPanel />
+                <EmergencyActionPanel predictedDisease={prediction.primary_prediction} />
               </div>
             )}
 
@@ -197,12 +190,7 @@ function ResultsContent() {
                     <p className="text-sm text-muted-foreground mb-1">
                       Severity
                     </p>
-                    <Badge
-                      className={cn(
-                        "text-sm px-3 py-1",
-                        severityColor[prediction.severity] ?? ""
-                      )}
-                    >
+                    <Badge variant="outline" className="text-sm px-3 py-1">
                       {prediction.severity}
                     </Badge>
                   </div>

@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export interface TopContributingSymptom {
   symptom: string;
@@ -20,6 +20,12 @@ export interface EmergencyInfo {
   escalation_triggered: boolean;
 }
 
+export interface ShapExplanation {
+  shap_values?: number[];
+  base_value?: number;
+  features?: string[];
+}
+
 export interface PredictionResponse {
   primary_prediction: string;
   confidence: number;
@@ -33,6 +39,7 @@ export interface PredictionResponse {
   doctor_recommendations: DoctorResponse[];
   explanation_summary: string;
   confidence_info: ConfidenceInfo;
+  shap_explanation?: ShapExplanation | null;
   risk_score?: number | null;
   risk_category?: string | null;
 }
@@ -297,6 +304,12 @@ export interface HealthSummary {
   summary_text: string;
 }
 
+export interface RiskScoreAnalytics {
+  current_score: number;
+  category: "Low" | "Medium" | "High";
+  breakdown: Record<string, number>;
+}
+
 export interface AnalyticsResponse {
   summary: AnalyticsSummary;
   disease_frequency: DiseaseFrequencyItem[];
@@ -312,6 +325,7 @@ export interface AnalyticsResponse {
   recurring_conditions: RecurringCondition[];
   health_summary: HealthSummary | null;
   insights: string[];
+  risk_score?: RiskScoreAnalytics | null;
 }
 
 export async function fetchAnalytics(

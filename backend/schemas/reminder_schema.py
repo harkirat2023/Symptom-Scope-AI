@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from typing import Literal
 
@@ -26,7 +26,7 @@ class ReminderUpdate(BaseModel):
 
 
 class ReminderResponse(BaseModel):
-    id: str = Field(alias="_id")
+    id: str = Field(validation_alias="_id")
     user_id: str
     medicine_name: str
     dosage: str
@@ -41,8 +41,7 @@ class ReminderResponse(BaseModel):
     created_at: str
     updated_at: str
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ReminderLogCreate(BaseModel):
@@ -51,14 +50,13 @@ class ReminderLogCreate(BaseModel):
 
 
 class ReminderLogResponse(BaseModel):
-    id: str = Field(alias="_id")
+    id: str = Field(validation_alias="_id")
     reminder_id: str
     status: str
     timestamp: str
     note: str | None = None
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ReminderListResponse(BaseModel):

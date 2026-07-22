@@ -67,7 +67,7 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token: key not found",
         )
-    issuer = settings.CLERK_ISSUER
+    issuer = settings.clerk_issuer
     try:
         payload = jwt.decode(
             token,

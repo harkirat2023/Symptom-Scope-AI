@@ -3,7 +3,7 @@
 import nextDynamic from "next/dynamic";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/lib/stores/theme-store";
 import {
   History as HistoryIcon,
   AlertTriangle,
@@ -22,9 +22,7 @@ const HistoryChartContent = nextDynamic(
 
 export default function HistoryPage() {
   const { userId, getToken } = useAuth();
-  const { resolvedTheme } = useTheme();
-
-  const isDark = resolvedTheme === "dark";
+  const { isDark } = useTheme();
 
   const { data: report, isLoading, error: reportError } = useQuery({
     queryKey: ["report", userId],

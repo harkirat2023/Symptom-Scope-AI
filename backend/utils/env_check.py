@@ -17,9 +17,6 @@ def validate_environment() -> list[str]:
             "Using local MongoDB – ensure mongod is running or set MONGODB_URI"
         )
 
-    if not settings.sentry_dsn:
-        warnings.append("Sentry disabled: SENTRY_DSN not configured")
-
     if settings.debug:
         warnings.append("DEBUG mode enabled – do not use in production")
 
@@ -31,8 +28,6 @@ def log_environment() -> None:
     logger.info("Starting %s v%s in %s mode", settings.app_name, settings.app_version, mode)
     logger.info("MongoDB: %s", _mask_uri(settings.mongodb_uri))
     logger.info("CORS origins: %s", settings.cors_origins)
-    if settings.sentry_dsn:
-        logger.info("Sentry: enabled (%s)", settings.sentry_env)
     if settings.redis_url:
         logger.info("Redis: %s", _mask_uri(settings.redis_url))
 

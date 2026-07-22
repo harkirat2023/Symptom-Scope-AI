@@ -13,16 +13,11 @@ class Settings(BaseSettings):
     mongodb_min_pool_size: int = 2
 
     # CORS
-    cors_origins: str = "http://localhost:3000,https://symptomscope.vercel.app"
+    cors_origins: str = "http://localhost:3000,http://localhost:3001,https://symptomscope.vercel.app"
 
     # Clerk Authentication (at least one required)
     clerk_jwks_url: Optional[str] = None
     clerk_issuer: Optional[str] = None
-
-    # Sentry
-    sentry_dsn: Optional[str] = None
-    sentry_env: str = "production"
-    sentry_traces_sample_rate: float = 0.1
 
     # Logging
     log_level: str = "INFO"

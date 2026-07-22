@@ -92,7 +92,7 @@ class ReminderRepository:
 
         next_due = self._compute_next_due_from_now()
         await _get_reminders_collection().update_one(
-            {"_id": log_entry.get("_original_id", reminder_id)},
+            {"_id": reminder_id},
             {"$set": {"nextDueAt": next_due, "updatedAt": now}},
         )
         return log_entry

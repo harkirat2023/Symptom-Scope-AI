@@ -12,6 +12,8 @@ export default function SignInPage() {
             elements: {
               rootBox: "mx-auto",
               card: "shadow-xl rounded-3xl",
+              socialButtonsBlockButton: "hidden",
+              dividerRow: "hidden",
             },
           }}
         />

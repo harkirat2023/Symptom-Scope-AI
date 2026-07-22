@@ -65,13 +65,13 @@ export function Header() {
           ) : (
             <>
               <Link
-                href="/login"
+                href="/auth/sign-in"
                 className={cn(buttonVariants({ variant: "ghost" }), "h-9 rounded-2xl px-5")}
               >
                 Sign In
               </Link>
               <Link
-                href="/signup"
+                href="/auth/sign-up"
                 className={cn(buttonVariants({ variant: "default" }), "h-9 rounded-2xl px-5")}
               >
                 Get Started
