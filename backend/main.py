@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from api.v1 import predict, doctors, reports, symptoms, hospitals, analytics, export, chat, reminders, risk_score
+from api.v1 import predict, doctors, reports, symptoms, hospitals, analytics, export, chat, reminders, risk_score, recovery
 from utils.database import get_database, close_database, ensure_indexes
 from utils.settings import settings
 from utils.exceptions import global_exception_handler
@@ -128,6 +128,7 @@ app.include_router(export.router, prefix="/api/v1", tags=["Export"])
 app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
 app.include_router(reminders.router, prefix="/api/v1", tags=["Reminders"])
 app.include_router(risk_score.router, prefix="/api/v1", tags=["Risk Score"])
+app.include_router(recovery.router, prefix="/api/v1", tags=["Recovery Plan"])
 
 
 @app.get("/health")

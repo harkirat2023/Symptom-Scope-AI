@@ -136,12 +136,13 @@ async def send_message(
             prediction_context=session.get("predictionContext"),
         )
     except Exception as e:
+        import logging
+        _logger = logging.getLogger("symptomscope.api.chat")
         _logger.warning("Chat message processing failed: %s", e)
-        from services.llm_service import LLMService as LLMServiceCls
-        response = await _with_llm_graceful(LLMServiceCls(), "chat",
-            message=input_data.content,
-            history=history,
-            prediction_context=session.get("predictionContext"),
+        # LLMService already has fallback built-in, but catch any unexpected errors
+        response = (
+            "I'm sorry, I couldn't process that request right now. "
+            "Please try again later or consult a healthcare professional."
         )
 
     assistant_msg = await chat_repository.add_message(
@@ -191,26 +192,6 @@ import logging
 _logger = logging.getLogger("symptomscope.api.chat")
 
 
-async def _with_llm_graceful(llm_service: LLMService, method_name: str, **kwargs):
-    """Call an LLM method with graceful fallback on error."""
-    from utils.settings import settings
-    if not settings.gemini_api_key:
-        msg = "The AI assistant is not configured. Please set GEMINI_API_KEY to enable AI features."
-        if method_name in ("explain_prediction",):
-            return msg
-        if method_name in ("generate_follow_up_questions",):
-            return ["Please consult a healthcare professional for personalized follow-up questions."]
-        return {"message": msg}
-    try:
-        method = getattr(llm_service, method_name)
-        return await method(**kwargs)
-    except RuntimeError:
-        return "The AI assistant is currently unavailable. Please try again later."
-    except Exception as e:
-        _logger.warning("LLM call failed (%s): %s", method_name, e)
-        return "I'm sorry, I couldn't process that request right now. Please try again."
-
-
 @router.post("/chat/explain")
 @limiter.limit("10/minute")
 async def explain_prediction(
@@ -219,7 +200,7 @@ async def explain_prediction(
     _user_id: str = Depends(get_current_user),
     llm_service: LLMService = Depends(),
 ):
-    result = await _with_llm_graceful(llm_service, "explain_prediction",
+    result = await llm_service.explain_prediction(
         disease=input_data.disease,
         confidence=input_data.confidence,
         severity=input_data.severity,
@@ -238,7 +219,7 @@ async def follow_up_questions(
     _user_id: str = Depends(get_current_user),
     llm_service: LLMService = Depends(),
 ):
-    result = await _with_llm_graceful(llm_service, "generate_follow_up_questions",
+    result = await llm_service.generate_follow_up_questions(
         disease=input_data.disease,
         confidence=input_data.confidence,
         severity=input_data.severity,
@@ -257,14 +238,17 @@ async def ask_medical_question(
 ):
     from utils.settings import settings as app_settings
     if not app_settings.gemini_api_key:
-        return {"answer": "The AI assistant is not configured. Please set GEMINI_API_KEY to enable AI features.", "rag_source": False}
+        return {
+            "answer": "The AI assistant is not configured. Please set GEMINI_API_KEY to enable AI features.",
+            "rag_source": False,
+        }
     try:
         rag = RAGService()
         answer = await rag.answer_with_rag(input_data.question, llm_service)
         return {"answer": answer, "rag_source": rag.has_documents()}
     except Exception as e:
         _logger.warning("RAG ask failed: %s", e)
-        result = await _with_llm_graceful(llm_service, "answer_medical_question", question=input_data.question)
+        result = await llm_service.answer_medical_question(question=input_data.question)
         return {"answer": result, "rag_source": False}
 
 
@@ -276,7 +260,7 @@ async def ask_medical_question_basic(
     _user_id: str = Depends(get_current_user),
     llm_service: LLMService = Depends(),
 ):
-    result = await _with_llm_graceful(llm_service, "answer_medical_question",
+    result = await llm_service.answer_medical_question(
         question=input_data.question,
     )
     return {"answer": result}

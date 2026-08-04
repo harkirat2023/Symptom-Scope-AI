@@ -61,18 +61,21 @@ export function ReminderCard({ reminder, onEdit }: ReminderCardProps) {
               <ReminderStatusBadge status={reminder.status} />
             </div>
 
-            <p className="mt-1 text-sm text-muted-foreground">
-              {reminder.dosage} | {reminder.frequency.replace(/_/g, " ")}
-            </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {reminder.dosage} | {reminder.frequency.replace(/_/g, " ")}
+          </p>
 
-            <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Clock className="size-3" />
-                {reminder.start_time}
-              </span>
-              <span>{reminder.duration_days} days</span>
-              {reminder.email_reminder && <span>Email reminders</span>}
-            </div>
+          <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Clock className="size-3" />
+              {reminder.start_time}
+            </span>
+            <span>{reminder.duration_days} days</span>
+            {reminder.email_reminder && <span>Email reminders</span>}
+            {reminder.frequency === "specific_days" && reminder.schedule_details?.days && (
+              <span>Days: {reminder.schedule_details.days.join(", ")}</span>
+            )}
+          </div>
 
             {reminder.next_due_at && (
               <p className="mt-1 text-xs text-muted-foreground">

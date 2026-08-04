@@ -130,6 +130,14 @@ class ReminderRepository:
         )
         return await cursor.to_list(length=100)
 
+    async def update_next_due(self, reminder_id: str, next_due: str) -> bool:
+        from bson.objectid import ObjectId
+        result = await _get_reminders_collection().update_one(
+            {"_id": ObjectId(reminder_id)},
+            {"$set": {"nextDueAt": next_due, "updatedAt": datetime.now(timezone.utc).isoformat()}},
+        )
+        return result.modified_count > 0
+
     @staticmethod
     def _compute_next_due(start_time: str) -> str:
         now = datetime.now(timezone.utc)

@@ -2,12 +2,12 @@ import type { NextConfig } from "next";
 
 const cspValue = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://clerk.accounts.dev https://*.clerk.accounts.dev https://*.accounts.dev https://challenges.cloudflare.com https://us-assets.i.posthog.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://clerk.accounts.dev https://*.clerk.accounts.dev https://*.accounts.dev https://challenges.cloudflare.com",
   "worker-src 'self' blob:",
   "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://img.clerk.com https://fastapi.tiangolo.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "connect-src 'self' https://clerk.accounts.dev https://*.clerk.accounts.dev https://*.accounts.dev https://clerk-telemetry.com https://challenges.cloudflare.com https://*.sentry.io http://localhost:* ws://localhost:* https://us.i.posthog.com https://us-assets.i.posthog.com",
+  "connect-src 'self' https://clerk.accounts.dev https://*.clerk.accounts.dev https://*.accounts.dev https://clerk-telemetry.com https://challenges.cloudflare.com http://localhost:* ws://localhost:*",
   "frame-src 'self' https://clerk.accounts.dev https://*.clerk.accounts.dev https://*.accounts.dev https://challenges.cloudflare.com",
   "base-uri 'self'",
   "form-action 'self'",

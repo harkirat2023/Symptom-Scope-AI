@@ -99,3 +99,27 @@ class PredictionRepository:
             )
             for d in docs
         ]
+
+    async def find_latest_by_user(self, user_id: str) -> PredictionRecord | None:
+        collection = _get_collection()
+        d = await collection.find_one(
+            {"userId": user_id},
+            sort=[("timestamp", -1)],
+            projection={
+                "_id": 1, "userId": 1, "symptoms": 1, "prediction": 1,
+                "confidence": 1, "severity": 1, "timestamp": 1,
+                "age": 1, "gender": 1, "existingConditions": 1,
+                "symptomDuration": 1, "painLevel": 1,
+            },
+        )
+        if not d:
+            return None
+        return PredictionRecord(
+            _id=str(d["_id"]),
+            user_id=d["userId"],
+            symptoms=d.get("symptoms", []),
+            prediction=d.get("prediction", ""),
+            confidence=d.get("confidence", 0.0),
+            severity=d.get("severity", ""),
+            timestamp=d.get("timestamp", ""),
+        )

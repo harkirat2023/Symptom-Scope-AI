@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Query, HTTPException
 from schemas.prediction_schema import (
     SymptomInput,
     PredictionResponse,
     TopContributingSymptom,
     ShapExplanation,
     EmergencyInfo,
+    PredictionRecord,
 )
 from schemas.doctor_schema import DoctorResponse
 from services.prediction_service import PredictionService
@@ -136,3 +137,45 @@ async def predict_symptoms(
         risk_score=score,
         risk_category=category,
     )
+
+
+@router.get("/predictions/latest")
+@limiter.limit("10/minute")
+async def get_latest_prediction(
+    request: Request,
+    user_id: str = Depends(get_current_user),
+    prediction_repo: PredictionRepository = Depends(),
+):
+    pred = await prediction_repo.find_latest_by_user(user_id)
+    if not pred:
+        raise HTTPException(status_code=404, detail="No predictions found")
+    return {
+        "primary_prediction": pred.prediction,
+        "confidence": pred.confidence,
+        "severity": pred.severity,
+        "prediction_id": pred.id,
+    }
+
+
+@router.get("/predictions/history", response_model=list[PredictionRecord])
+@limiter.limit("10/minute")
+async def get_prediction_history(
+    request: Request,
+    user_id: str = Depends(get_current_user),
+    prediction_repository: PredictionRepository = Depends(),
+    limit: int = Query(20, ge=1, le=100),
+):
+    """Get prediction history for the current user."""
+    history = await prediction_repository.find_by_user(user_id, limit=limit)
+    return [
+        PredictionRecord(
+            id=str(p.id),
+            user_id=p.user_id,
+            symptoms=p.symptoms,
+            prediction=p.prediction,
+            confidence=p.confidence,
+            severity=p.severity,
+            timestamp=p.created_at.isoformat() if hasattr(p, 'created_at') else "",
+        )
+        for p in history
+    ]

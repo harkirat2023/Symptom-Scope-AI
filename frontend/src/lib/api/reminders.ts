@@ -6,7 +6,7 @@ function authHeaders(token?: string): Record<string, string> {
   return headers;
 }
 
-export type ReminderFrequency = "daily" | "specific_days" | "every_x_hours" | "as_needed";
+export type ReminderFrequency = "daily" | "specific_days";
 export type ReminderStatus = "active" | "paused" | "completed";
 export type ReminderLogStatus = "taken" | "missed" | "skipped";
 

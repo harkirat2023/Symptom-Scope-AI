@@ -39,9 +39,15 @@ class Settings(BaseSettings):
 
     # Gemini LLM (LangChain-based)
     gemini_api_key: Optional[str] = None
-    gemini_model: str = "gemini-1.5-flash"
+    gemini_model: str = "gemini-1.5-flash-latest"
     gemini_temperature: float = 0.7
     gemini_max_tokens: int = 1024
+
+    # Groq LLM (LangChain-based fallback)
+    groq_api_key: Optional[str] = None
+    groq_model: str = "llama-3.3-70b-versatile"
+    groq_temperature: float = 0.7
+    groq_max_tokens: int = 1024
 
     # RAG / ChromaDB
     chromadb_path: str = "./ml/rag/chromadb"

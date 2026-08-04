@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/lib/focus-trap";
 import {
-  LayoutDashboard, History, FileText, Settings, Activity, Pill,
+  LayoutDashboard, History, FileText, Settings, Activity, Pill, HeartPulse,
 } from "lucide-react";
 
 export const sidebarLinks = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/symptom-checker", label: "Symptom Checker", icon: Activity },
+  { href: "/recovery-plan", label: "Recovery Plan", icon: HeartPulse },
   { href: "/history", label: "History", icon: History },
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/reminders", label: "Reminders", icon: Pill },

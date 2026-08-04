@@ -32,9 +32,10 @@ import { toast } from "sonner";
 const formSchema = z.object({
   medicine_name: z.string().min(1, "Medicine name is required").max(100),
   dosage: z.string().min(1, "Dosage is required").max(50),
-  frequency: z.enum(["daily", "specific_days", "every_x_hours", "as_needed"]),
+  frequency: z.enum(["daily", "specific_days"]),
   duration_days: z.coerce.number().int().min(1).max(365),
   start_time: z.string().regex(/^\d{2}:\d{2}$/, "Use HH:MM format"),
+  specific_days: z.array(z.enum(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])).min(1, "Select at least one day").optional(),
   email_reminder: z.boolean().default(false),
 });
 
@@ -61,6 +62,8 @@ export function ReminderForm({
     reset,
     control,
     formState: { errors },
+    watch,
+    setValue,
   } = useForm<FormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(formSchema) as any,
@@ -71,6 +74,7 @@ export function ReminderForm({
           frequency: editReminder.frequency,
           duration_days: editReminder.duration_days,
           start_time: editReminder.start_time,
+          specific_days: [],
           email_reminder: editReminder.email_reminder,
         }
       : {
@@ -79,9 +83,25 @@ export function ReminderForm({
           frequency: "daily",
           duration_days: 7,
           start_time: "08:00",
+          specific_days: [],
           email_reminder: false,
         },
   });
+
+  const selectedFrequency = watch("frequency");
+
+  const weekdays = [
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+  ];
+
+  const handleFrequencyChange = (value: ReminderFrequency) => {
+    setValue("frequency", value);
+    if (value === "specific_days") {
+      setValue("specific_days", weekdays);
+    } else {
+      setValue("specific_days", []);
+    }
+  };
 
   const onSubmit = async (data: FormValues) => {
     setSaving(true);
@@ -161,6 +181,7 @@ export function ReminderForm({
                   value={field.value}
                   onValueChange={(v) => {
                     if (v) field.onChange(v as ReminderFrequency);
+                    handleFrequencyChange(v as ReminderFrequency);
                   }}
                 >
                   <SelectTrigger>
@@ -169,13 +190,53 @@ export function ReminderForm({
                   <SelectContent>
                     <SelectItem value="daily">Daily</SelectItem>
                     <SelectItem value="specific_days">Specific Days</SelectItem>
-                    <SelectItem value="every_x_hours">Every X Hours</SelectItem>
-                    <SelectItem value="as_needed">As Needed</SelectItem>
                   </SelectContent>
                 </Select>
               )}
             />
           </div>
+
+          {selectedFrequency === "specific_days" && (
+            <div className="space-y-2">
+              <Label>Days of Week</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {weekdays.map((day) => (
+                  <Controller
+                    key={day}
+                    name="specific_days"
+                    control={control}
+                    render={({ field }) => {
+                      const isSelected = field.value?.includes(day) || false;
+                      return (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`day-${day}`}
+                            checked={isSelected}
+                            onChange={(e) => {
+                              const updated = e.target.checked
+                                ? [...(field.value || []), day]
+                                : (field.value || []).filter((d) => d !== day);
+                              field.onChange(updated);
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <label htmlFor={`day-${day}`} className="text-sm">
+                            {day}
+                          </label>
+                        </div>
+                      );
+                    }}
+                  />
+                ))}
+              </div>
+              {errors.specific_days && (
+                <p className="text-xs text-destructive">
+                  {errors.specific_days.message}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-4">
             <div className="flex-1 space-y-2">

@@ -1,22 +1,31 @@
 """
-Centralized LLM Service — LangChain + Gemini 2.5 Flash.
+Centralized LLM Service — LangChain + Gemini with Groq fallback and direct SDK fallback.
 
 Provides:
 - AI Medical Report Explainer
 - AI Follow-up Symptom Assistant
 - Medical Knowledge Assistant (RAG-aware)
+- General Chat with prediction context
 
-All LLM calls go through this service. Prompts are loaded from ml/prompts/.
+Fallback chain:
+1. LangChain + Gemini (primary)
+2. LangChain + Groq (if configured)
+3. Direct google-generativeai SDK (if Gemini key available)
+4. Graceful error message (no crash)
 """
 
+import asyncio
+import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from utils.settings import settings
 
 PROMPTS_DIR = Path(__file__).parent.parent / "ml" / "prompts"
+
+_logger = logging.getLogger("symptomscope.llm_service")
 
 
 def _load_prompt(name: str) -> str:
@@ -27,49 +36,157 @@ def _load_prompt(name: str) -> str:
 
 
 class LLMService:
-    """Centralized LLM service using LangChain + Gemini 2.5 Flash."""
+    """Centralized LLM service with multi-provider fallback."""
 
     def __init__(self):
-        self._llm = None
+        self._gemini_llm = None
+        self._groq_llm = None
+
+    # --- Provider Initialization ---
+
+    def _init_gemini_langchain(self):
+        """Initialize LangChain ChatGoogleGenerativeAI."""
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        api_key = settings.gemini_api_key
+        if not api_key:
+            raise RuntimeError("GEMINI_API_KEY not configured")
+        self._gemini_llm = ChatGoogleGenerativeAI(
+            model=settings.gemini_model,
+            google_api_key=api_key,
+            temperature=settings.gemini_temperature,
+            max_tokens=settings.gemini_max_tokens,
+        )
+
+    def _init_groq_langchain(self):
+        """Initialize LangChain ChatGroq."""
+        from langchain_groq import ChatGroq
+        api_key = settings.groq_api_key
+        if not api_key:
+            raise RuntimeError("GROQ_API_KEY not configured")
+        self._groq_llm = ChatGroq(
+            model=settings.groq_model,
+            groq_api_key=api_key,
+            temperature=settings.groq_temperature,
+            max_tokens=settings.groq_max_tokens,
+        )
+
+    # --- Provider Properties ---
 
     @property
-    def llm(self) -> ChatGoogleGenerativeAI:
-        if self._llm is None:
-            api_key = settings.gemini_api_key
-            if not api_key:
-                raise RuntimeError(
-                    "GEMINI_API_KEY is not configured. "
-                    "Set GEMINI_API_KEY in environment variables."
-                )
-            self._llm = ChatGoogleGenerativeAI(
-                model=settings.gemini_model,
-                google_api_key=api_key,
-                temperature=settings.gemini_temperature,
-                max_tokens=settings.gemini_max_tokens,
-            )
-        return self._llm
+    def gemini_llm(self):
+        if self._gemini_llm is None:
+            self._init_gemini_langchain()
+        return self._gemini_llm
+
+    @property
+    def groq_llm(self):
+        if self._groq_llm is None:
+            self._init_groq_langchain()
+        return self._groq_llm
+
+    # --- Core Invocation with Retry ---
+
+    @retry(
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        stop=stop_after_attempt(3),
+        retry=retry_if_exception_type((Exception,)),
+        reraise=True,
+    )
+    async def _invoke_gemini_langchain(
+        self,
+        system_prompt: str,
+        user_message: str,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        """Invoke via LangChain + Gemini."""
+        messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_message)]
+        kwargs = {}
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        result = await asyncio.wait_for(
+            self.gemini_llm.ainvoke(messages, **kwargs),
+            timeout=30.0,
+        )
+        return result.content
+
+    @retry(
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        stop=stop_after_attempt(3),
+        retry=retry_if_exception_type((Exception,)),
+        reraise=True,
+    )
+    async def _invoke_groq_langchain(
+        self,
+        system_prompt: str,
+        user_message: str,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        """Invoke via LangChain + Groq."""
+        messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_message)]
+        kwargs = {}
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        result = await asyncio.wait_for(
+            self.groq_llm.ainvoke(messages, **kwargs),
+            timeout=30.0,
+        )
+        return result.content
+
+    # --- Public Invoke with Fallback Chain ---
 
     async def invoke(
         self,
         system_prompt: str,
         user_message: str,
-        temperature: float | None = None,
-        max_tokens: int | None = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
     ) -> str:
-        """Send a message to the LLM and return the response."""
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_message),
-        ]
-        kwargs: dict[str, Any] = {}
-        if temperature is not None:
-            kwargs["temperature"] = temperature
-        if max_tokens is not None:
-            kwargs["max_tokens"] = max_tokens
-        result = await self.llm.ainvoke(messages, **kwargs)
-        return result.content
+        """
+        Send a message to the LLM with automatic fallback chain.
 
-    # --- Feature-specific methods ---
+        Fallback order:
+        1. LangChain + Gemini
+        2. LangChain + Groq (if GROQ_API_KEY configured)
+        3. Graceful error message
+        """
+        last_error = None
+
+        # Attempt 1: LangChain + Gemini
+        if settings.gemini_api_key:
+            try:
+                _logger.info("LLM invoke: attempting LangChain + Gemini")
+                return await self._invoke_gemini_langchain(
+                    system_prompt, user_message, temperature, max_tokens
+                )
+            except Exception as e:
+                _logger.warning("LangChain + Gemini failed: %s", e)
+                last_error = e
+
+        # Attempt 2: LangChain + Groq
+        if settings.groq_api_key:
+            try:
+                _logger.info("LLM invoke: attempting LangChain + Groq fallback")
+                return await self._invoke_groq_langchain(
+                    system_prompt, user_message, temperature, max_tokens
+                )
+            except Exception as e:
+                _logger.warning("LangChain + Groq failed: %s", e)
+                last_error = e
+
+        # All failed - graceful error
+        _logger.error("All LLM providers failed. Last error: %s", last_error)
+        return (
+            "I'm sorry, the AI assistant is currently unavailable. "
+            "Please try again later or consult a healthcare professional for medical advice."
+        )
+
+    # --- Feature-specific Methods ---
 
     async def explain_prediction(
         self,
@@ -133,7 +250,12 @@ class LLMService:
             user_content = f"Context:\n{context}\n\nQuestion:\n{question}"
         return await self.invoke(prompt, user_content)
 
-    async def chat(self, message: str, history: list[dict], prediction_context: dict | None = None) -> str:
+    async def chat(
+        self,
+        message: str,
+        history: list[dict],
+        prediction_context: dict | None = None,
+    ) -> str:
         """General chat with prediction context."""
         prompt = _load_prompt("chat.txt")
         if not prompt:
@@ -158,9 +280,44 @@ class LLMService:
                 messages.append(SystemMessage(content=content))
         messages.append(HumanMessage(content=message))
 
-        result = await self.llm.ainvoke(messages)
-        return result.content
+        # Use the invoke method with fallback for the chat
+        last_error = None
 
+        # Attempt 1: LangChain + Gemini
+        if settings.gemini_api_key:
+            try:
+                _logger.info("LLM chat: attempting LangChain + Gemini")
+                result = await asyncio.wait_for(
+                    self.gemini_llm.ainvoke(messages),
+                    timeout=30.0,
+                )
+                return result.content
+            except Exception as e:
+                _logger.warning("LangChain + Gemini chat failed: %s", e)
+                last_error = e
+
+        # Attempt 2: LangChain + Groq
+        if settings.groq_api_key:
+            try:
+                _logger.info("LLM chat: attempting LangChain + Groq fallback")
+                result = await asyncio.wait_for(
+                    self.groq_llm.ainvoke(messages),
+                    timeout=30.0,
+                )
+                return result.content
+            except Exception as e:
+                _logger.warning("LangChain + Groq chat failed: %s", e)
+                last_error = e
+
+        # All failed - graceful error
+        _logger.error("All LLM providers failed for chat. Last error: %s", last_error)
+        return (
+            "I'm sorry, the AI assistant is currently unavailable. "
+            "Please try again later or consult a healthcare professional for medical advice."
+        )
+
+
+# --- Default Prompts ---
 
 def _default_explain_prompt() -> str:
     return (

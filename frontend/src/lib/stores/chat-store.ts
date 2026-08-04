@@ -28,6 +28,7 @@ interface ChatState {
   ) => void;
   setError: (error: string | null) => void;
   reset: () => void;
+  clearChat: () => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -49,12 +50,20 @@ export const useChatStore = create<ChatState>((set) => ({
   setSending: (sending) => set({ isSending: sending }),
   setPredictionContext: (context) => set({ predictionContext: context }),
   setError: (error) => set({ error }),
-  reset: () =>
-    set({
-      session: null,
-      messages: [],
-      isLoading: false,
-      isSending: false,
-      error: null,
-    }),
+reset: () =>
+      set({
+        session: null,
+        messages: [],
+        isLoading: false,
+        isSending: false,
+        error: null,
+      }),
+    clearChat: () =>
+      set({
+        session: null,
+        messages: [],
+        isLoading: false,
+        isSending: false,
+        error: null,
+      }),
 }));

@@ -6,10 +6,11 @@ from typing import Literal
 class ReminderCreate(BaseModel):
     medicine_name: str = Field(..., min_length=1, max_length=100)
     dosage: str = Field(..., min_length=1, max_length=50)
-    frequency: Literal["daily", "specific_days", "every_x_hours", "as_needed"]
+    frequency: Literal["daily", "specific_days"]
     schedule_details: dict = Field(default_factory=dict)
     duration_days: int = Field(default=7, ge=1, le=365)
     start_time: str = Field(default="08:00", pattern=r"^\d{2}:\d{2}$")
+    specific_days: list[str] = Field(default_factory=list)
     linked_prediction_id: str | None = None
     email_reminder: bool = False
 
@@ -17,10 +18,11 @@ class ReminderCreate(BaseModel):
 class ReminderUpdate(BaseModel):
     medicine_name: str | None = None
     dosage: str | None = None
-    frequency: Literal["daily", "specific_days", "every_x_hours", "as_needed"] | None = None
+    frequency: Literal["daily", "specific_days"] | None = None
     schedule_details: dict | None = None
     duration_days: int | None = Field(default=None, ge=1, le=365)
     start_time: str | None = None
+    specific_days: list[str] | None = None
     status: Literal["active", "paused", "completed"] | None = None
     email_reminder: bool | None = None
 

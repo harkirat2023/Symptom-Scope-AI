@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, Stethoscope } from "lucide-react";
+import { Menu, Stethoscope, MessageCircle } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 
 interface DashboardHeaderProps {
   onMenuClick: () => void;
+  onChatClick: () => void;
 }
 
-export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
+export function DashboardHeader({ onMenuClick, onChatClick }: DashboardHeaderProps) {
   return (
     <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 lg:px-6">
       <Button
@@ -28,6 +29,17 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
       </Link>
 
       <div className="flex-1" />
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className="hidden lg:flex lg:items-center lg:gap-2 rounded-xl bg-primary/10 px-3 text-primary hover:bg-primary/20"
+        onClick={onChatClick}
+        aria-label="Open Health Assistant"
+      >
+        <MessageCircle className="size-5" />
+        <span className="hidden sm:inline-block text-sm font-medium">Health Assistant</span>
+      </Button>
 
       <UserButton
         appearance={{
