@@ -55,7 +55,8 @@ class RecoveryPlanRepository:
             .sort("createdAt", -1)
             .limit(1)
         )
-        return await cursor.to_list(length=1)
+        plans = await cursor.to_list(length=1)
+        return plans[0] if plans else None
 
     async def find_by_user(self, user_id: str, limit: int = 20) -> list[dict]:
         cursor = (
@@ -74,8 +75,10 @@ class RecoveryPlanRepository:
                 "$set": {
                     "planData": plan_data,
                     "isRegenerated": True,
-                    "regenerationCount": {"$inc": 1},
                     "updatedAt": now,
+                },
+                "$inc": {
+                    "regenerationCount": 1
                 }
             },
         )

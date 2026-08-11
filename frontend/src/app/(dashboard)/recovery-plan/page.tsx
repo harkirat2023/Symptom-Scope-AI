@@ -140,7 +140,7 @@ function RecoveryPlanContent() {
   if (!prediction && !predictionLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <div id="main-content" className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+        <div id="main-content" className="mx-auto w-full max-w-none px-4 py-8 sm:px-6 lg:px-8">
           <Card>
             <CardContent className="py-12 text-center space-y-6">
               <HeartPulse className="size-12 mx-auto text-muted-foreground" />
@@ -163,7 +163,7 @@ function RecoveryPlanContent() {
   if (predictionLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <div id="main-content" className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+        <div id="main-content" className="mx-auto w-full max-w-none px-4 py-8 sm:px-6 lg:px-8">
           <Card>
             <CardContent className="py-12 text-center">
               <Activity className="size-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
@@ -177,7 +177,7 @@ function RecoveryPlanContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <div id="main-content" className="mx-auto w-full max-w-none px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

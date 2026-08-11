@@ -1,10 +1,10 @@
 """
-Download the Kaggle Disease Symptom Description Dataset.
+ml.data.download_kaggle
+========================
+Quick helper to pre-download the Symptom2Disease dataset to the local cache.
 
 Usage:
     python -m ml.data.download_kaggle
-
-Requires: kagglehub (pip install kagglehub)
 """
 
 from pathlib import Path
@@ -14,25 +14,13 @@ def download_dataset() -> Path:
     try:
         import kagglehub
     except ImportError:
-        raise ImportError("kagglehub is required. Install with: pip install kagglehub")
+        raise ImportError("kagglehub is required. Install with: pip install 'kagglehub[pandas-datasets]'")
 
-    print("Downloading disease-symptom-description-dataset from Kaggle...")
-    path = kagglehub.dataset_download("itachi9604/disease-symptom-description-dataset")
+    print("Downloading niyarrbarman/symptom2disease from Kaggle …")
+    path = kagglehub.dataset_download("niyarrbarman/symptom2disease")
     dest = Path(path)
-    print(f"Dataset downloaded to: {dest}")
-
-    raw_dir = Path(__file__).parent / "raw"
-    raw_dir.mkdir(parents=True, exist_ok=True)
-
-    for f in dest.glob("*"):
-        target = raw_dir / f.name
-        if not target.exists():
-            import shutil
-            shutil.copy2(f, target)
-            print(f"  Copied: {f.name} -> {target}")
-
-    print(f"Raw dataset stored in: {raw_dir}")
-    return raw_dir
+    print(f"Dataset cached at: {dest}")
+    return dest
 
 
 if __name__ == "__main__":

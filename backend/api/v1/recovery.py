@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from typing import Optional, List
 from schemas.recovery_schema import (
@@ -13,6 +13,7 @@ from repositories.prediction_repository import PredictionRepository
 from auth.dependency import get_current_user
 from utils.rate_limit import limiter
 from bson.objectid import ObjectId
+from bson.errors import InvalidId
 import json
 
 router = APIRouter()
@@ -32,11 +33,20 @@ async def generate_recovery_plan(
     recovery_repo: RecoveryPlanRepository = Depends(),
     prediction_repo: PredictionRepository = Depends(),
 ):
+    # Validate prediction_id is a valid ObjectId
+    try:
+        ObjectId(input_data.prediction_id)
+    except (InvalidId, Exception):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid prediction ID format"
+        )
+
     # Get the prediction
     pred = await prediction_repo.find_by_id(input_data.prediction_id)
     if not pred:
         raise HTTPException(status_code=404, detail="Prediction not found")
-    if pred.get("userId") != user_id:
+    if pred.user_id != user_id:
         raise HTTPException(status_code=403, detail="Access denied")
 
     # Build context for LLM
@@ -145,6 +155,15 @@ async def regenerate_recovery_plan(
     recovery_repo: RecoveryPlanRepository = Depends(),
     prediction_repo: PredictionRepository = Depends(),
 ):
+    # Validate plan_id is a valid ObjectId
+    try:
+        ObjectId(input_data.plan_id)
+    except (InvalidId, Exception):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid recovery plan ID format"
+        )
+
     plan = await recovery_repo.find_by_id(input_data.plan_id)
     if not plan:
         raise HTTPException(status_code=404, detail="Recovery plan not found")
@@ -262,6 +281,7 @@ def _get_default_plan(context: dict) -> dict:
 
 
 def _format_plan_response(plan: dict) -> dict:
+    plan_data = plan.get("planData", {})
     return {
         "id": str(plan.get("_id", "")),
         "user_id": plan.get("userId", ""),
@@ -270,21 +290,21 @@ def _format_plan_response(plan: dict) -> dict:
         "confidence": plan.get("confidence", 0),
         "severity": plan.get("severity", ""),
         "symptoms": plan.get("symptoms", []),
-        "recovery_timeline": plan.get("recoveryTimeline", []),
-        "diet_recommendations": plan.get("dietRecommendations", {}),
-        "foods_to_eat": plan.get("foodsToEat", []),
-        "foods_to_avoid": plan.get("foodsToAvoid", []),
-        "hydration_advice": plan.get("hydrationAdvice", ""),
-        "sleep_recommendation": plan.get("sleepRecommendation", ""),
-        "exercise_recommendation": plan.get("exerciseRecommendation", ""),
-        "daily_physical_activity": plan.get("dailyPhysicalActivity", []),
-        "lifestyle_changes": plan.get("lifestyleChanges", []),
-        "medicines_disclaimer": plan.get("medicinesDisclaimer", ""),
-        "when_to_visit_doctor": plan.get("whenToVisitDoctor", []),
-        "emergency_warning_signs": plan.get("emergencyWarningSigns", []),
-        "mental_wellness_tips": plan.get("mentalWellnessTips", []),
-        "recovery_checklist": plan.get("recoveryChecklist", []),
-        "progress_tracker": plan.get("progressTracker", {}),
+        "recovery_timeline": plan_data.get("recovery_timeline", []),
+        "diet_recommendations": plan_data.get("diet_recommendations", {}),
+        "foods_to_eat": plan_data.get("foods_to_eat", []),
+        "foods_to_avoid": plan_data.get("foods_to_avoid", []),
+        "hydration_advice": plan_data.get("hydration_advice", ""),
+        "sleep_recommendation": plan_data.get("sleep_recommendation", ""),
+        "exercise_recommendation": plan_data.get("exercise_recommendation", ""),
+        "daily_physical_activity": plan_data.get("daily_physical_activity", []),
+        "lifestyle_changes": plan_data.get("lifestyle_changes", []),
+        "medicines_disclaimer": plan_data.get("medicines_disclaimer", ""),
+        "when_to_visit_doctor": plan_data.get("when_to_visit_doctor", []),
+        "emergency_warning_signs": plan_data.get("emergency_warning_signs", []),
+        "mental_wellness_tips": plan_data.get("mental_wellness_tips", []),
+        "recovery_checklist": plan_data.get("recovery_checklist", []),
+        "progress_tracker": plan_data.get("progress_tracker", {}),
         "created_at": plan.get("createdAt", ""),
         "updated_at": plan.get("updatedAt", ""),
         "version": plan.get("version", 1),

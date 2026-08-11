@@ -7,6 +7,21 @@ _db: AsyncIOMotorDatabase | None = None
 
 def get_database() -> AsyncIOMotorDatabase:
     global _client, _db
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+        if _client is not None:
+            try:
+                client_loop = _client.get_io_loop()
+                if client_loop != loop or client_loop.is_closed():
+                    _client = None
+                    _db = None
+            except Exception:
+                _client = None
+                _db = None
+    except RuntimeError:
+        pass
+
     if _db is not None:
         return _db
     if _client is None:

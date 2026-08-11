@@ -1,17 +1,15 @@
+"""
+services.feature_engineering
+==============================
+Encodes incoming symptom names into binary feature vectors for model inference.
+SYMPTOM_LIST is imported from ml.constants — single source of truth.
+"""
+
 import numpy as np
 
-SYMPTOM_LIST = [
-    "fever", "dry_cough", "fatigue", "headache", "sore_throat",
-    "body_ache", "chest_pain", "shortness_of_breath", "nausea",
-    "vomiting", "diarrhea", "loss_of_taste", "loss_of_smell",
-    "runny_nose", "sneezing", "joint_pain", "chills", "sweating",
-    "dizziness", "abdominal_pain", "rash", "muscle_weakness",
-    "blurred_vision", "confusion", "seizure",
-    "arm_pain", "jaw_pain", "facial_drooping", "speech_difficulty",
-    "sensitivity_to_light", "sensitivity_to_sound",
-]
+from ml.constants import SYMPTOM_LIST
 
-_SYMPTOM_INDEX = {s: i for i, s in enumerate(SYMPTOM_LIST)}
+_SYMPTOM_INDEX: dict[str, int] = {s: i for i, s in enumerate(SYMPTOM_LIST)}
 
 
 class FeatureEngineeringService:

@@ -140,7 +140,7 @@ async def health_check():
     db_ok = False
     try:
         db = get_database()
-        db.command("ping")
+        await db.command("ping")
         db_ok = True
     except Exception:
         pass

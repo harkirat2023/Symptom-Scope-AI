@@ -101,7 +101,7 @@ export default function SymptomCheckerPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div id="main-content" className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+      <div id="main-content" className="mx-auto w-full max-w-none px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold">Symptom Checker</h1>
           <p className="mt-2 text-muted-foreground">
