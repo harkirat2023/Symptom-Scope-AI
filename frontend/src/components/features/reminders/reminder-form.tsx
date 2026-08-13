@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { useForm, Controller, useWatch } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
@@ -62,7 +62,6 @@ export function ReminderForm({
     reset,
     control,
     formState: { errors },
-    watch,
     setValue,
   } = useForm<FormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,7 +87,9 @@ export function ReminderForm({
         },
   });
 
-  const selectedFrequency = useWatch<FormValues>({ control, name: "frequency" }) as FormValues["frequency"];
+  const [selectedFrequency, setSelectedFrequency] = useState<FormValues["frequency"]>(
+    editReminder ? editReminder.frequency : ("daily" as FormValues["frequency"]) 
+  );
 
   const weekdays: ("Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday")[] = [
     "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
@@ -96,6 +97,7 @@ export function ReminderForm({
 
   const handleFrequencyChange = (value: ReminderFrequency) => {
     setValue("frequency", value);
+    setSelectedFrequency(value);
     if (value === "specific_days") {
       setValue("specific_days", weekdays);
     } else {
