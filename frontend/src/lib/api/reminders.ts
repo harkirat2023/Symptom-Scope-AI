@@ -16,7 +16,7 @@ export interface Reminder {
   medicine_name: string;
   dosage: string;
   frequency: ReminderFrequency;
-  schedule_details: Record<string, unknown>;
+  schedule_details?: { days?: string[] | null } | Record<string, unknown> | null;
   duration_days: number;
   start_time: string;
   status: ReminderStatus;

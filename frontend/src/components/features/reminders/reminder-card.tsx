@@ -72,8 +72,8 @@ export function ReminderCard({ reminder, onEdit }: ReminderCardProps) {
             </span>
             <span>{reminder.duration_days} days</span>
             {reminder.email_reminder && <span>Email reminders</span>}
-            {reminder.frequency === "specific_days" && reminder.schedule_details?.days && (
-              <span>Days: {reminder.schedule_details.days.join(", ")}</span>
+            {reminder.frequency === "specific_days" && Array.isArray(reminder.schedule_details?.days) && (
+              <span>Days: {(reminder.schedule_details.days as string[]).join(", ")}</span>
             )}
           </div>
 

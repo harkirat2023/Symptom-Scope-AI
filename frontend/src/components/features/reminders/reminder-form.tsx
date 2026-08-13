@@ -90,7 +90,7 @@ export function ReminderForm({
 
   const selectedFrequency = watch("frequency");
 
-  const weekdays = [
+  const weekdays: ("Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday")[] = [
     "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
   ];
 
