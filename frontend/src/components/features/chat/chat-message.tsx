@@ -13,7 +13,7 @@ interface ChatMessageProps {
   id: string;
 }
 
-export function ChatMessage({ role, content, id: _id }: ChatMessageProps) {
+export function ChatMessage({ role, content }: ChatMessageProps) {
   const isUser = role === "user";
   const [copied, setCopied] = useState(false);
 
