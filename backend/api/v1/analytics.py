@@ -60,8 +60,8 @@ async def get_analytics(
                 category=latest_risk["category"],
                 last_computed=latest_risk["timestamp"],
             ).model_dump()
-    except Exception as e:
-        _logger.exception("Failed to fetch latest risk score: %s", e)
+    except Exception:
+        _logger.exception("Failed to fetch latest risk score")
         result["risk_score"] = None
 
     with _ANALYTICS_LOCK:
