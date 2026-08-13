@@ -6,9 +6,14 @@ function authHeaders(token?: string): Record<string, string> {
   return headers;
 }
 
+export type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
 export type ReminderFrequency = "daily" | "specific_days";
 export type ReminderStatus = "active" | "paused" | "completed";
 export type ReminderLogStatus = "taken" | "missed" | "skipped";
+
+export interface ReminderScheduleDetails {
+  days?: Weekday[] | null;
+}
 
 export interface Reminder {
   id: string;
@@ -16,7 +21,7 @@ export interface Reminder {
   medicine_name: string;
   dosage: string;
   frequency: ReminderFrequency;
-  schedule_details?: { days?: ("Monday"|"Tuesday"|"Wednesday"|"Thursday"|"Friday"|"Saturday"|"Sunday")[] | null } | Record<string, unknown> | null;
+  schedule_details?: ReminderScheduleDetails | Record<string, unknown> | null;
   duration_days: number;
   start_time: string;
   status: ReminderStatus;
