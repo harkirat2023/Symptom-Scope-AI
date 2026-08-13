@@ -163,7 +163,7 @@ async def health_check():
         "components": {
             "database": "connected" if db_ok else "unreachable",
             "ml_models": "loaded" if ml_ok else "missing",
-            "gemini_api": "configured" if settings.gemini_api_key else "not configured",
+            "groq_api": "configured" if settings.groq_api_key else "not configured",
             "rag_knowledge_base": "initialized" if rag_stats.get("initialized") else "empty",
         },
     }

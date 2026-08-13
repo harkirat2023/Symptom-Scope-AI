@@ -121,10 +121,10 @@ fi
 
 # Verify Gemini API configuration via health endpoint
 HEALTH_JSON=$(curl -s http://localhost:8080/health 2>/dev/null || echo '{}')
-if echo "$HEALTH_JSON" | grep -q '"gemini_api": "configured"'; then
-    ok "Gemini API configured"
+if echo "$HEALTH_JSON" | grep -q '"groq_api": "configured"'; then
+    ok "Groq API configured"
 else
-    warn "Gemini API not configured - AI features will be unavailable"
+    warn "Groq API not configured - AI features will be unavailable"
 fi
 
 # ── 4. Start frontend ──────────────────────────────────────────────────

@@ -51,7 +51,8 @@ class Settings(BaseSettings):
 
     # RAG / ChromaDB
     chromadb_path: str = "./ml/rag/chromadb"
-    embedding_model: str = "models/embedding-001"
+    # Default to a small, fast sentence-transformers model for local embeddings
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     rag_top_k: int = 5
     rag_score_threshold: float = 0.7
 

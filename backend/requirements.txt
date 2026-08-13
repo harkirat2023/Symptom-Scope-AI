@@ -25,6 +25,5 @@ langchain-chroma>=0.2.0
 langchain-text-splitters>=0.3.0
 tenacity>=8.2.0
 kagglehub[pandas-datasets]>=0.3.0
-# langchain-google-genai is required to provide Google Generative AI embeddings used by the RAG service.
-# RAG initialization is gated by GEMINI_API_KEY in backend/services/rag_service.py; set GEMINI_API_KEY in env to enable.
-langchain-google-genai>=0.1.0
+# Use TF-IDF (scikit-learn) for local embeddings in RAG to avoid heavy deps like torch.
+# If you prefer semantic embeddings, replace with sentence-transformers and update settings.embedding_model accordingly.

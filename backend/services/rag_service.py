@@ -7,13 +7,58 @@ for grounded LLM responses.
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 from langchain_chroma import Chroma
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from utils.settings import settings
+
+# Use a lightweight TF-IDF based adapter backed by scikit-learn for embeddings.
+# This keeps the RAG pipeline free and avoids heavyweight dependencies like
+# PyTorch/transformers while remaining compatible with Chroma's embedding API.
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+
+class TFIDFEmbeddingAdapter:
+    """Simple TF-IDF embedding adapter.
+
+    Notes:
+    - This is not a semantic embedding like sentence-transformers but provides a
+      deterministic, local vector representation suitable for small RAG setups
+      and CI/runtime environments where GPU/torch are unavailable.
+    - The adapter fits the vectorizer on the first batch of documents passed to
+      embed_documents(). If you prefer to control vocabulary, pass a pre-fit
+      vectorizer or call fit on a corpus first.
+    """
+
+    def __init__(self):
+        self._vectorizer = TfidfVectorizer()
+        self._fitted = False
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        if not texts:
+            return []
+        if not self._fitted:
+            mat = self._vectorizer.fit_transform(texts)
+            self._fitted = True
+        else:
+            mat = self._vectorizer.transform(texts)
+        return mat.toarray().tolist()
+
+    def embed_query(self, text: str) -> List[float]:
+        if not self._fitted:
+            # If not yet fitted, fit with the single query to avoid crash; results
+            # will be sparse until full corpus is added.
+            self._vectorizer.fit([text])
+            self._fitted = True
+            mat = self._vectorizer.transform([text])
+            return mat.toarray()[0].tolist()
+        mat = self._vectorizer.transform([text])
+        return mat.toarray()[0].tolist()
+
+    def __call__(self, texts: List[str]) -> List[List[float]]:
+        return self.embed_documents(texts)
 
 KNOWLEDGE_DIR = Path(__file__).parent.parent / "ml" / "rag" / "knowledge"
 
@@ -26,14 +71,18 @@ class RAGService:
         self._vector_store = None
 
     @property
-    def embeddings(self) -> GoogleGenerativeAIEmbeddings:
+    def embeddings(self):
+        """Return an embeddings adapter instance.
+
+        Uses a lightweight TF-IDF adapter by default (scikit-learn), which is
+        deterministic and avoids heavyweight dependencies. This keeps the RAG
+        pipeline runnable in constrained environments and on Render without
+        GPU/torch installs. If you prefer semantic embeddings, swap this adapter
+        for a sentence-transformers-backed implementation and update
+        requirements accordingly.
+        """
         if self._embeddings is None:
-            if not settings.gemini_api_key:
-                raise RuntimeError("GEMINI_API_KEY is required for RAG embeddings.")
-            self._embeddings = GoogleGenerativeAIEmbeddings(
-                model=settings.embedding_model,
-                google_api_key=settings.gemini_api_key,
-            )
+            self._embeddings = TFIDFEmbeddingAdapter()
         return self._embeddings
 
     @property

@@ -39,26 +39,19 @@ class LLMService:
     """Centralized LLM service with multi-provider fallback."""
 
     def __init__(self):
-        self._gemini_llm = None
         self._groq_llm = None
 
     # --- Provider Initialization ---
 
-    def _init_gemini_langchain(self):
-        """Initialize LangChain ChatGoogleGenerativeAI."""
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        api_key = settings.gemini_api_key
-        if not api_key:
-            raise RuntimeError("GEMINI_API_KEY not configured")
-        self._gemini_llm = ChatGoogleGenerativeAI(
-            model=settings.gemini_model,
-            google_api_key=api_key,
-            temperature=settings.gemini_temperature,
-            max_tokens=settings.gemini_max_tokens,
-        )
-
     def _init_groq_langchain(self):
-        """Initialize LangChain ChatGroq."""
+        """Initialize LangChain ChatGroq.
+
+        The system uses Groq as the free primary LLM provider for generation.
+        Gemeni/OpenAI paths were removed to comply with the free-Groq-only
+        requirement. GROQ_API_KEY (settings.groq_api_key) must be set in
+        production. This keeps the LangChain architecture intact while
+        avoiding proprietary Gemini/OpenAI dependencies.
+        """
         from langchain_groq import ChatGroq
         api_key = settings.groq_api_key
         if not api_key:
@@ -73,12 +66,6 @@ class LLMService:
     # --- Provider Properties ---
 
     @property
-    def gemini_llm(self):
-        if self._gemini_llm is None:
-            self._init_gemini_langchain()
-        return self._gemini_llm
-
-    @property
     def groq_llm(self):
         if self._groq_llm is None:
             self._init_groq_langchain()
@@ -86,31 +73,6 @@ class LLMService:
 
     # --- Core Invocation with Retry ---
 
-    @retry(
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        stop=stop_after_attempt(3),
-        retry=retry_if_exception_type((Exception,)),
-        reraise=True,
-    )
-    async def _invoke_gemini_langchain(
-        self,
-        system_prompt: str,
-        user_message: str,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-    ) -> str:
-        """Invoke via LangChain + Gemini."""
-        messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_message)]
-        kwargs = {}
-        if temperature is not None:
-            kwargs["temperature"] = temperature
-        if max_tokens is not None:
-            kwargs["max_tokens"] = max_tokens
-        result = await asyncio.wait_for(
-            self.gemini_llm.ainvoke(messages, **kwargs),
-            timeout=30.0,
-        )
-        return result.content
 
     @retry(
         wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -155,36 +117,21 @@ class LLMService:
         2. LangChain + Groq (if GROQ_API_KEY configured)
         3. Graceful error message
         """
-        last_error = None
-
-        # Attempt 1: LangChain + Gemini
-        if settings.gemini_api_key:
-            try:
-                _logger.info("LLM invoke: attempting LangChain + Gemini")
-                return await self._invoke_gemini_langchain(
-                    system_prompt, user_message, temperature, max_tokens
-                )
-            except Exception as e:
-                _logger.warning("LangChain + Gemini failed: %s", e)
-                last_error = e
-
-        # Attempt 2: LangChain + Groq
+        # Only use Groq as the primary and required LLM provider. This aligns with
+        # the free-Groq-only requirement: do not rely on Gemini/OpenAI.
         if settings.groq_api_key:
             try:
-                _logger.info("LLM invoke: attempting LangChain + Groq fallback")
+                _logger.info("LLM invoke: attempting LangChain + Groq")
                 return await self._invoke_groq_langchain(
                     system_prompt, user_message, temperature, max_tokens
                 )
             except Exception as e:
-                _logger.warning("LangChain + Groq failed: %s", e)
-                last_error = e
+                _logger.exception("LangChain + Groq invocation failed")
+                raise
 
-        # All failed - graceful error
-        _logger.error("All LLM providers failed. Last error: %s", last_error)
-        return (
-            "I'm sorry, the AI assistant is currently unavailable. "
-            "Please try again later or consult a healthcare professional for medical advice."
-        )
+        # GROQ not configured - fail fast with clear message.
+        _logger.error("GROQ_API_KEY is not configured; LLM cannot be initialized")
+        raise RuntimeError("GROQ_API_KEY is required for LLM generation")
 
     # --- Feature-specific Methods ---
 
@@ -283,38 +230,21 @@ class LLMService:
         # Use the invoke method with fallback for the chat
         last_error = None
 
-        # Attempt 1: LangChain + Gemini
-        if settings.gemini_api_key:
-            try:
-                _logger.info("LLM chat: attempting LangChain + Gemini")
-                result = await asyncio.wait_for(
-                    self.gemini_llm.ainvoke(messages),
-                    timeout=30.0,
-                )
-                return result.content
-            except Exception as e:
-                _logger.warning("LangChain + Gemini chat failed: %s", e)
-                last_error = e
-
-        # Attempt 2: LangChain + Groq
+        # Use Groq as the single primary provider for chat.
         if settings.groq_api_key:
             try:
-                _logger.info("LLM chat: attempting LangChain + Groq fallback")
+                _logger.info("LLM chat: invoking Groq provider")
                 result = await asyncio.wait_for(
                     self.groq_llm.ainvoke(messages),
                     timeout=30.0,
                 )
                 return result.content
-            except Exception as e:
-                _logger.warning("LangChain + Groq chat failed: %s", e)
-                last_error = e
+            except Exception:
+                _logger.exception("LangChain + Groq chat failed")
+                raise
 
-        # All failed - graceful error
-        _logger.error("All LLM providers failed for chat. Last error: %s", last_error)
-        return (
-            "I'm sorry, the AI assistant is currently unavailable. "
-            "Please try again later or consult a healthcare professional for medical advice."
-        )
+        _logger.error("GROQ_API_KEY is not configured; chat cannot be fulfilled")
+        raise RuntimeError("GROQ_API_KEY is required for chat LLM")
 
 
 # --- Default Prompts ---

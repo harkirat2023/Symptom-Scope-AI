@@ -10,7 +10,6 @@ import { useState, useCallback } from "react";
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
-  id: string;
 }
 
 export function ChatMessage({ role, content }: ChatMessageProps) {

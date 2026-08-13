@@ -42,11 +42,11 @@ def _check_mongo():
         raise ValueError("MONGODB_URI is not configured")
 
 
-@check("GEMINI_API_KEY is set")
-def _check_gemini():
+@check("GROQ_API_KEY is set")
+def _check_groq():
     from utils.settings import settings
-    if not settings.gemini_api_key:
-        raise ValueError("GEMINI_API_KEY is not configured")
+    if not settings.groq_api_key:
+        raise ValueError("GROQ_API_KEY is not configured")
 
 
 @check("ML model artifacts exist")

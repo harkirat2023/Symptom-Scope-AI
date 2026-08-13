@@ -245,9 +245,9 @@ async def ask_medical_question(
     llm_service: LLMService = _llm_service_dep,
 ):
     from utils.settings import settings as app_settings
-    if not app_settings.gemini_api_key:
+    if not app_settings.groq_api_key:
         return {
-            "answer": "The AI assistant is not configured. Please set GEMINI_API_KEY to enable AI features.",
+            "answer": "The AI assistant is not configured. Please set GROQ_API_KEY to enable AI features.",
             "rag_source": False,
         }
     try:
