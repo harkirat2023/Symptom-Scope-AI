@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+
 from schemas.chat_schema import (
     ChatSessionCreate,
     ChatSessionResponse,
@@ -8,13 +9,23 @@ from schemas.chat_schema import (
     MessageSend,
 )
 from services.chat_service import ChatService
-from services.rag_service import RAGService
 from services.llm_service import LLMService
+from services.rag_service import RAGService
 from repositories.chat_repository import ChatRepository
 from auth.dependency import get_current_user
 from utils.rate_limit import limiter
 
+import logging
+
 router = APIRouter()
+
+# Module-level dependency defaults (avoid calling Depends() in function arg defaults per ruff B008)
+_user_dep = Depends(get_current_user)
+_chat_service_dep = Depends()
+_chat_repository_dep = Depends()
+_llm_service_dep = Depends()
+
+_logger = logging.getLogger("symptomscope.api.chat")
 
 
 class ExplainRequest(BaseModel):
@@ -42,9 +53,9 @@ class MedicalQuestion(BaseModel):
 async def create_chat_session(
     request: Request,
     input_data: ChatSessionCreate,
-    user_id: str = Depends(get_current_user),
-    chat_service: ChatService = Depends(),
-    chat_repository: ChatRepository = Depends(),
+    user_id: str = _user_dep,
+    chat_service: ChatService = _chat_service_dep,
+    chat_repository: ChatRepository = _chat_repository_dep,
 ):
     prediction_context = None
     if input_data.prediction_id:
@@ -82,8 +93,8 @@ async def create_chat_session(
 @limiter.limit("10/minute")
 async def list_chat_sessions(
     request: Request,
-    user_id: str = Depends(get_current_user),
-    chat_repository: ChatRepository = Depends(),
+    user_id: str = _user_dep,
+    chat_repository: ChatRepository = _chat_repository_dep,
 ):
     sessions = await chat_repository.get_user_sessions(user_id)
     results = []
@@ -107,9 +118,9 @@ async def list_chat_sessions(
 async def send_message(
     request: Request,
     input_data: MessageSend,
-    user_id: str = Depends(get_current_user),
-    chat_service: ChatService = Depends(),
-    chat_repository: ChatRepository = Depends(),
+    user_id: str = _user_dep,
+    chat_service: ChatService = _chat_service_dep,
+    chat_repository: ChatRepository = _chat_repository_dep,
 ):
     session = await chat_repository.get_session(input_data.session_id)
     if not session:
@@ -166,8 +177,8 @@ async def send_message(
 async def get_messages(
     request: Request,
     session_id: str,
-    user_id: str = Depends(get_current_user),
-    chat_repository: ChatRepository = Depends(),
+    user_id: str = _user_dep,
+    chat_repository: ChatRepository = _chat_repository_dep,
 ):
     session = await chat_repository.get_session(session_id)
     if not session:
@@ -197,8 +208,8 @@ _logger = logging.getLogger("symptomscope.api.chat")
 async def explain_prediction(
     request: Request,
     input_data: ExplainRequest,
-    _user_id: str = Depends(get_current_user),
-    llm_service: LLMService = Depends(),
+    _user_id: str = _user_dep,
+    llm_service: LLMService = _llm_service_dep,
 ):
     result = await llm_service.explain_prediction(
         disease=input_data.disease,
@@ -216,8 +227,8 @@ async def explain_prediction(
 async def follow_up_questions(
     request: Request,
     input_data: FollowUpRequest,
-    _user_id: str = Depends(get_current_user),
-    llm_service: LLMService = Depends(),
+    _user_id: str = _user_dep,
+    llm_service: LLMService = _llm_service_dep,
 ):
     result = await llm_service.generate_follow_up_questions(
         disease=input_data.disease,
@@ -233,8 +244,8 @@ async def follow_up_questions(
 async def ask_medical_question(
     request: Request,
     input_data: MedicalQuestion,
-    _user_id: str = Depends(get_current_user),
-    llm_service: LLMService = Depends(),
+    _user_id: str = _user_dep,
+    llm_service: LLMService = _llm_service_dep,
 ):
     from utils.settings import settings as app_settings
     if not app_settings.gemini_api_key:
@@ -257,8 +268,8 @@ async def ask_medical_question(
 async def ask_medical_question_basic(
     request: Request,
     input_data: MedicalQuestion,
-    _user_id: str = Depends(get_current_user),
-    llm_service: LLMService = Depends(),
+    _user_id: str = _user_dep,
+    llm_service: LLMService = _llm_service_dep,
 ):
     result = await llm_service.answer_medical_question(
         question=input_data.question,
