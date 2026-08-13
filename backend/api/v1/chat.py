@@ -1,6 +1,10 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
+from auth.dependency import get_current_user
+from repositories.chat_repository import ChatRepository
 from schemas.chat_schema import (
     ChatSessionCreate,
     ChatSessionResponse,
@@ -11,11 +15,7 @@ from schemas.chat_schema import (
 from services.chat_service import ChatService
 from services.llm_service import LLMService
 from services.rag_service import RAGService
-from repositories.chat_repository import ChatRepository
-from auth.dependency import get_current_user
 from utils.rate_limit import limiter
-
-import logging
 
 router = APIRouter()
 
@@ -60,7 +60,6 @@ async def create_chat_session(
     prediction_context = None
     if input_data.prediction_id:
         from repositories.prediction_repository import PredictionRepository
-        from bson.objectid import ObjectId
 
         pred_repo = PredictionRepository()
         pred = await pred_repo.find_by_id(input_data.prediction_id)
@@ -134,7 +133,7 @@ async def send_message(
     if not is_valid:
         raise HTTPException(status_code=400, detail=error_msg)
 
-    user_msg = await chat_repository.add_message(
+    await chat_repository.add_message(
         input_data.session_id, "user", input_data.content
     )
 
@@ -146,9 +145,7 @@ async def send_message(
             history,
             prediction_context=session.get("predictionContext"),
         )
-    except Exception as e:
-        import logging
-        _logger = logging.getLogger("symptomscope.api.chat")
+    except Exception as e:  # noqa: BLE001
         _logger.warning("Chat message processing failed: %s", e)
         # LLMService already has fallback built-in, but catch any unexpected errors
         response = (
@@ -257,7 +254,7 @@ async def ask_medical_question(
         rag = RAGService()
         answer = await rag.answer_with_rag(input_data.question, llm_service)
         return {"answer": answer, "rag_source": rag.has_documents()}
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         _logger.warning("RAG ask failed: %s", e)
         result = await llm_service.answer_medical_question(question=input_data.question)
         return {"answer": result, "rag_source": False}
