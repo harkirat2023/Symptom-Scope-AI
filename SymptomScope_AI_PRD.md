@@ -10,7 +10,7 @@ SymptomScope AI is a full-stack symptom intelligence platform for fast, structur
 
 The user enters symptoms through a guided symptom checker. The ML engine uses the approved Kaggle symptom-disease dataset with Decision Tree, Random Forest and Naive Bayes models to predict a disease and confidence information. SHAP explains important symptom contributions. Existing medical metadata provides severity, precautions, specialist mapping and emergency indicators.
 
-A separate second layer uses the predicted disease and the user's location to provide relevant doctor and hospital suggestions. LangChain builds the recommendation context and Gemini returns structured recommendations. **The AI layer must never replace, modify or independently determine the ML disease prediction.**
+A separate second layer uses the predicted disease and the user's location to provide relevant doctor and hospital suggestions. LangChain builds the recommendation context and Groq returns structured recommendations. **The AI layer must never replace, modify or independently determine the ML disease prediction.**
 
 **The platform is for preliminary health information and screening, not definitive diagnosis or replacement of healthcare professionals.**
 
@@ -27,7 +27,7 @@ Help users understand reported symptoms, receive a preliminary ML-based disease 
 5. Provide severity, precautions and specialist guidance.
 6. Detect configured emergency conditions.
 7. Recommend relevant doctors and hospitals based on disease and user location.
-8. Provide a grounded LangChain + Gemini health assistant.
+8. Provide a grounded LangChain + Groq health assistant.
 9. Generate structured recovery guidance.
 10. Maintain history, reports and reminders.
 11. Preserve secure authentication and user data.
@@ -99,7 +99,7 @@ It returns, where implemented:
 - Confidence/probability information.
 - SHAP explanation.
 
-**Architecture rule:** the ML layer is the only disease-prediction layer. LangChain/Gemini must not replace, override or modify the predicted disease.
+**Architecture rule:** the ML layer is the only disease-prediction layer. LangChain/Groq must not replace, override or modify the predicted disease.
 
 # 7. Dataset and ML Pipeline
 
@@ -153,7 +153,7 @@ Each supported disease should have configured:
 - Relevant specialist.
 - Emergency indicators where applicable.
 
-These mappings come from configured medical data/rules, not dynamically invented by Gemini.
+These mappings come from configured medical data/rules, not dynamically invented by Groq.
 
 # 10. Layer 2 — Doctor and Hospital Recommendation
 
@@ -180,7 +180,7 @@ Available Doctors / Hospitals
       ↓
 LangChain PromptTemplate
       ↓
-Gemini
+Groq
       ↓
 Structured Recommendation
       ↓
@@ -242,7 +242,7 @@ Configured Relevant Specialty
  ↓
 Available Local Providers
  ↓
-LangChain + Gemini
+LangChain + Groq
  ↓
 Relevant Recommendations
 ```
@@ -255,7 +255,7 @@ The existing AI assistant remains separate from disease prediction.
 
 Technology:
 - LangChain.
-- Gemini.
+- Groq.
 - ChromaDB.
 - RAG.
 
@@ -268,7 +268,7 @@ ChromaDB Retrieval
  ↓
 Curated Medical Context
  ↓
-Gemini
+Groq
  ↓
 Grounded Response
 ```
@@ -286,12 +286,12 @@ Severity
 +
 Verified Medical Knowledge
  ↓
-LangChain + Gemini
+LangChain + Groq
  ↓
 Personalized Presentation
 ```
 
-Gemini must not prescribe medication or override verified medical information.
+Groq must not prescribe medication or override verified medical information.
 
 # 14. Medical Knowledge Base
 
@@ -398,7 +398,7 @@ The updated recommendation workflow is complete when:
 5. User provides a location.
 6. Available provider data is obtained.
 7. LangChain builds a dynamic prompt.
-8. Gemini returns structured recommendation data.
+8. Groq returns structured recommendation data.
 9. Recommendations are relevant to disease and location.
 10. Provider information is not invented.
 11. Existing prediction workflow remains functional.
@@ -406,7 +406,7 @@ The updated recommendation workflow is complete when:
 
 # 21. Definition of Done
 
-The project is complete when the core ML prediction, Kaggle training, three models, SHAP, medical metadata, disease/location-aware doctor and hospital recommendations, structured LangChain/Gemini output, AI/RAG assistant, recovery plan, dashboard, history, reports, reminders and authentication work without critical frontend/backend integration errors.
+The project is complete when the core ML prediction, Kaggle training, three models, SHAP, medical metadata, disease/location-aware doctor and hospital recommendations, structured LangChain/Groq output, AI/RAG assistant, recovery plan, dashboard, history, reports, reminders and authentication work without critical frontend/backend integration errors.
 
 # 22. Medical Disclaimer
 

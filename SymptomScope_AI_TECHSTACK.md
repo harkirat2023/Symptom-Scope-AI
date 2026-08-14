@@ -125,7 +125,7 @@ This is an extension of the existing AI functionality.
 | Technology | Purpose |
 |---|---|
 | LangChain | Recommendation orchestration and dynamic prompts |
-| Gemini | Recommendation generation |
+| Groq | Recommendation generation |
 | MongoDB / existing provider data | Doctor/hospital information |
 | ChromaDB | Existing medical RAG knowledge where relevant |
 
@@ -154,7 +154,7 @@ Available Provider Data
  ↓
 LangChain PromptTemplate
  ↓
-Gemini
+Groq
  ↓
 Structured Recommendation
 ```
@@ -172,7 +172,7 @@ LangChain constructs the recommendation prompt using available:
 - Candidate hospitals.
 - Relevant medical context where required.
 
-Gemini should recommend only from supplied provider information.
+Groq should recommend only from supplied provider information.
 
 ## 9. Structured Output
 
@@ -196,7 +196,7 @@ The exact implementation schema remains defined by backend models.
 | Technology | Purpose |
 |---|---|
 | LangChain | RAG orchestration |
-| Gemini | AI generation |
+| Groq | AI generation |
 | ChromaDB | Vector retrieval |
 | RAG | Grounded medical information |
 
@@ -209,7 +209,7 @@ ChromaDB
  ↓
 Relevant Medical Context
  ↓
-Gemini
+Groq
  ↓
 Grounded Answer
 ```
@@ -225,12 +225,12 @@ Verified Medical Knowledge
 +
 Severity
  ↓
-LangChain + Gemini
+LangChain + Groq
  ↓
 Personalized Presentation
 ```
 
-Gemini must not change the disease or prescribe medication.
+Groq must not change the disease or prescribe medication.
 
 # 12. Core Features That Must Not Be Disturbed
 
@@ -250,7 +250,7 @@ Gemini must not change the disease or prescribe medication.
 - Health dashboard
 - Prediction history
 - Recovery Plan
-- LangChain + Gemini AI assistant
+- LangChain + Groq AI assistant
 - ChromaDB RAG
 - PDF/CSV reports
 - Daily reminders
@@ -276,7 +276,7 @@ Examples:
 
 ```text
 MONGODB_URI
-GEMINI_API_KEY
+Groq_API_KEY
 Clerk configuration
 API base URL
 Other project-specific secrets
@@ -301,7 +301,7 @@ Maintain `.env.example` without real secrets.
           ↓                       ↓
      ML Prediction            AI Services
           ↓                       ↓
- DT + RF + NB              LangChain + Gemini
+ DT + RF + NB              LangChain + Groq
           ↓                       ↓
  Predicted Disease          RAG / Recommendation
           │                       │
@@ -318,7 +318,7 @@ Symptoms → Kaggle-trained ML → Disease
 
 Layer 2:
 Disease + Specialty + Location + Provider Data
-→ LangChain + Gemini
+→ LangChain + Groq
 → Doctor/Hospital Recommendation
 ```
 
@@ -334,7 +334,7 @@ Disease + Specialty + Location + Provider Data
 8. Keep provider data structured and traceable.
 9. Use LangChain for dynamic recommendation orchestration.
 10. Use structured output rather than uncontrolled recommendation text.
-11. Do not allow Gemini to invent provider details.
+11. Do not allow Groq to invent provider details.
 12. Keep frontend/backend contracts stable.
 13. Keep ML, AI and API responsibilities separated.
 14. Preserve all existing product workflows.
@@ -361,13 +361,13 @@ ML Models
 Decision Tree + Random Forest + Naive Bayes
 
 AI
-LangChain + Gemini
+LangChain + Groq
 
 RAG
 ChromaDB
 
 Healthcare Recommendation
-LangChain PromptTemplate + Gemini + structured provider data
+LangChain PromptTemplate + Groq + structured provider data
 
 Engineering
 Git + GitHub + Postman + VS Code
