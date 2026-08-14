@@ -7,6 +7,10 @@ from utils.rate_limit import limiter
 
 router = APIRouter()
 
+# Module-level dependency defaults to satisfy ruff B008
+_auth_dep = Depends(get_current_user)
+_doctor_service_dep = Depends()
+
 
 @router.get("/doctors", response_model=DoctorSearchResponse)
 @limiter.limit("30/minute")
@@ -17,8 +21,8 @@ async def get_doctors(
     location: str | None = Query(None, max_length=100, description="Filter by location"),
     sort_by: str | None = Query(None, description="Sort field: rating, distance_km, availability"),
     limit: int = Query(50, ge=1, le=100, description="Max results"),
-    _: str = Depends(get_current_user),
-    doctor_service: DoctorService = Depends(),
+    _: str = _auth_dep,
+    doctor_service: DoctorService = _doctor_service_dep,
 ):
     results = await doctor_service.get_recommendations(
         specialty=specialty,
@@ -39,8 +43,8 @@ async def get_doctors(
 @limiter.limit("30/minute")
 async def get_doctor_specialties(
     request: Request,
-    _: str = Depends(get_current_user),
-    doctor_service: DoctorService = Depends(),
+    _: str = _auth_dep,
+    doctor_service: DoctorService = _doctor_service_dep,
 ):
     return await doctor_service.get_specialties()
 
@@ -49,7 +53,7 @@ async def get_doctor_specialties(
 @limiter.limit("30/minute")
 async def get_doctor_locations(
     request: Request,
-    _: str = Depends(get_current_user),
-    doctor_service: DoctorService = Depends(),
+    _: str = _auth_dep,
+    doctor_service: DoctorService = _doctor_service_dep,
 ):
     return await doctor_service.get_locations()

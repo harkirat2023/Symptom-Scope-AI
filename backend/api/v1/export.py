@@ -1,5 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
+
 from auth.dependency import get_current_user
 from repositories.prediction_repository import PredictionRepository
 from repositories.risk_score_repository import RiskScoreRepository
@@ -7,6 +10,13 @@ from services.report_export_service import ReportExportService
 from utils.rate_limit import limiter
 
 router = APIRouter()
+_logger = logging.getLogger("symptomscope.api.export")
+
+# Module-level dependency defaults to satisfy ruff B008
+_auth_dep = Depends(get_current_user)
+_prediction_repository_dep = Depends()
+_risk_score_repository_dep = Depends()
+_export_service_dep = Depends()
 
 
 async def _get_risk_data(
@@ -17,8 +27,8 @@ async def _get_risk_data(
         latest = await risk_score_repository.get_latest_score(user_id)
         if latest:
             return latest["score"], latest["category"]
-    except Exception:
-        pass
+    except Exception as e:
+        _logger.exception("Failed to get latest risk score for user %s: %s", user_id, e)
     return None, None
 
 
@@ -28,10 +38,10 @@ async def export_csv(
     request: Request,
     user_id: str,
     summary: bool = Query(False, description="Include summary section"),
-    auth_user_id: str = Depends(get_current_user),
-    prediction_repository: PredictionRepository = Depends(),
-    risk_score_repository: RiskScoreRepository = Depends(),
-    export_service: ReportExportService = Depends(),
+    auth_user_id: str = _auth_dep,
+    prediction_repository: PredictionRepository = _prediction_repository_dep,
+    risk_score_repository: RiskScoreRepository = _risk_score_repository_dep,
+    export_service: ReportExportService = _export_service_dep,
 ):
     if auth_user_id != user_id:
         raise HTTPException(status_code=403, detail="Access denied")
@@ -64,10 +74,10 @@ async def export_pdf(
     request: Request,
     user_id: str,
     detailed: bool = Query(False, description="Generate detailed per-prediction report"),
-    auth_user_id: str = Depends(get_current_user),
-    prediction_repository: PredictionRepository = Depends(),
-    risk_score_repository: RiskScoreRepository = Depends(),
-    export_service: ReportExportService = Depends(),
+    auth_user_id: str = _auth_dep,
+    prediction_repository: PredictionRepository = _prediction_repository_dep,
+    risk_score_repository: RiskScoreRepository = _risk_score_repository_dep,
+    export_service: ReportExportService = _export_service_dep,
 ):
     if auth_user_id != user_id:
         raise HTTPException(status_code=403, detail="Access denied")
@@ -88,6 +98,7 @@ async def export_pdf(
     except ImportError as e:
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
+        _logger.exception("Failed to generate PDF for user %s: %s", user_id, e)
         raise HTTPException(status_code=500, detail="Failed to generate PDF report")
 
     return Response(

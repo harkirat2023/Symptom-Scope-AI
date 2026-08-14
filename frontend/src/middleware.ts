@@ -1,5 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
@@ -10,27 +10,32 @@ const isProtectedRoute = createRouteMatcher([
   "/results(.*)",
 ]);
 
-// Wrap Clerk middleware invocation in a try/catch so that deployments without
-// Clerk configuration (e.g., preview environments) do not fail the middleware
-// step. If Clerk is not configured, middleware becomes a no-op and protected
-// routes should be guarded server-side where necessary.
-export default async function middleware(request: Request) {
-  try {
-    const handler = clerkMiddleware(async (auth, req) => {
+// Determine whether Clerk configuration is present.
+const hasClerkConfig = Boolean(process.env.CLERK_JWKS_URL || process.env.CLERK_ISSUER);
+
+// If Clerk is configured, use the official clerkMiddleware pattern. The
+// middleware will invoke the afterAuth hook where we protect specific routes.
+// If Clerk is not configured, provide a safe fallback middleware that does not
+// expose protected routes in production and allows previews in non-production.
+const middleware = hasClerkConfig
+  ? clerkMiddleware({
+      async afterAuth(auth, req) {
+        if (isProtectedRoute(req)) {
+          await auth.protect();
+        }
+      },
+    })
+  : (async (req: NextRequest) => {
       if (isProtectedRoute(req)) {
-        await auth.protect();
+        if (process.env.NODE_ENV === "production") {
+          return new Response("Authentication provider not configured", { status: 500 });
+        }
+        return NextResponse.next();
       }
+      return NextResponse.next();
     });
-    return await handler(request as any);
-  } catch (e) {
-    // If Clerk throws (missing config, runtime issues), allow the request to
-    // continue so the site can still serve public pages. Log via console so
-    // Vercel/Edge logs capture the event.
-    // eslint-disable-next-line no-console
-    console.warn("Clerk middleware skipped due to configuration error:", e);
-    return NextResponse.next();
-  }
-}
+
+export default middleware;
 
 export const config = {
   matcher: [

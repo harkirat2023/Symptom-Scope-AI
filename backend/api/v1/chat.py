@@ -196,9 +196,6 @@ async def get_messages(
     ]
 
 
-import logging
-_logger = logging.getLogger("symptomscope.api.chat")
-
 
 @router.post("/chat/explain")
 @limiter.limit("10/minute")

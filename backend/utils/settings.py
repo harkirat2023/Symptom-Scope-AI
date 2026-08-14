@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -66,6 +67,33 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @field_validator("mongodb_uri")
+    def _validate_mongodb_uri(cls, v: str) -> str:  # pragma: no cover - simple validation
+        """
+        Ensure MONGODB_URI contains exactly one MongoDB URI and looks like a
+        mongodb connection string. This prevents accidental comma-separated
+        values (e.g., when a secret was pasted with multiple entries) from
+        being used and producing confusing PyMongo InvalidURI errors.
+
+        Do not log or expose the URI/credentials — only raise a clear error.
+        """
+        if not isinstance(v, str) or not v.strip():
+            raise ValueError("MONGODB_URI must be set to a non-empty MongoDB URI.")
+
+        # Reject obvious multiple-values (commas or semicolons/newlines)
+        if "," in v or ";" in v or "\n" in v:
+            raise ValueError(
+                "MONGODB_URI must contain exactly one MongoDB connection string (no commas or multiple URIs)."
+            )
+
+        # Basic scheme check — support both `mongodb://` and `mongodb+srv://`
+        if not (v.startswith("mongodb://") or v.startswith("mongodb+srv://")):
+            raise ValueError(
+                "MONGODB_URI must start with 'mongodb://' or 'mongodb+srv://'."
+            )
+
+        return v
 
     model_config = {
         "env_file": ".env",
