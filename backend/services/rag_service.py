@@ -121,6 +121,23 @@ class RAGService:
 
         return docs
 
+    def _rebuild_vector_store(self):
+        """Drop and recreate the Chroma collection.
+
+        Used when the persistent collection was created by a different embedding
+        adapter (e.g. the old Google Generative AI embeddings) and its vector
+        dimension no longer matches the current adapter.
+        """
+        store = self.vector_store
+        try:
+            store.reset_collection()
+        except Exception:
+            try:
+                store.delete_collection()
+            except Exception:
+                pass
+        self._vector_store = None
+
     def initialize_knowledge_base(self) -> int:
         """Load, chunk, embed, and store all medical documents."""
         documents = self._load_documents()
@@ -135,7 +152,11 @@ class RAGService:
         chunks = splitter.split_documents(documents)
 
         if chunks:
-            self.vector_store.add_documents(chunks)
+            try:
+                self.vector_store.add_documents(chunks)
+            except Exception:
+                self._rebuild_vector_store()
+                self.vector_store.add_documents(chunks)
 
         return len(chunks)
 
@@ -147,7 +168,10 @@ class RAGService:
     def has_documents(self) -> bool:
         """Check if the knowledge base has any documents."""
         try:
-            return self.vector_store._collection.count() > 0
+            if self.vector_store._collection.count() <= 0:
+                return False
+            self.vector_store.similarity_search("test", k=1)
+            return True
         except Exception:
             return False
 

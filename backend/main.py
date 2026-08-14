@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
@@ -20,12 +21,38 @@ logger = logging.getLogger("symptomscope")
 
 MAX_REQUEST_SIZE = 1024 * 100  # 100 KB
 
+_index_retry_task: asyncio.Task | None = None
+
+
+async def _ensure_indexes_with_retry() -> None:
+    global _index_retry_task
+    backoff = 5
+    while True:
+        try:
+            await ensure_indexes()
+            logger.info("MongoDB indexes and seed data ready")
+            return
+        except Exception as e:
+            logger.warning(
+                "MongoDB unavailable, will retry indexes in %ss: %s", backoff, e
+            )
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2, 60)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _index_retry_task
     log_environment()
     get_database()
-    await ensure_indexes()
+
+    try:
+        await ensure_indexes()
+    except Exception as e:
+        logger.warning(
+            "MongoDB indexes not ready at startup (%s); starting anyway and retrying in the background", e
+        )
+        _index_retry_task = asyncio.create_task(_ensure_indexes_with_retry())
 
     # Auto-initialize RAG knowledge base if documents exist
     try:
@@ -43,6 +70,9 @@ async def lifespan(app: FastAPI):
     await reminder_scheduler.start()
     logger.info("Application startup complete")
     yield
+    if _index_retry_task is not None:
+        _index_retry_task.cancel()
+        _index_retry_task = None
     await reminder_scheduler.stop()
     await close_database()
     logger.info("Application shutdown complete")

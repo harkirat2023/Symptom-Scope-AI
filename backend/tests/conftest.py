@@ -1,7 +1,14 @@
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Tests never touch a real MongoDB server: point the client at a non-routable
+# local URI so pymongo's background monitor threads do not attempt an SSL
+# handshake against a live Atlas cluster (which can hang or crash on some
+# Python/OpenSSL builds). All DB access in tests is mocked.
+os.environ.setdefault("MONGODB_URI", "mongodb://localhost:27017/test")
 
 import pytest
 from fastapi.testclient import TestClient
@@ -83,9 +90,10 @@ def _mock_mongodb_lifespan():
     """Patch the lifespan's ensure_indexes to avoid Motor event loop issues."""
     with patch("main.ensure_indexes", new_callable=AsyncMock):
         with patch("services.rag_service.RAGService.has_documents", return_value=False):
-            with patch("services.reminder_service.scheduler.start", new_callable=AsyncMock):
-                with patch("services.reminder_service.scheduler.stop", new_callable=AsyncMock):
-                    yield
+            with patch("services.rag_service.RAGService.initialize_knowledge_base", return_value=0):
+                with patch("services.reminder_service.scheduler.start", new_callable=AsyncMock):
+                    with patch("services.reminder_service.scheduler.stop", new_callable=AsyncMock):
+                        yield
 
 
 @pytest.fixture
