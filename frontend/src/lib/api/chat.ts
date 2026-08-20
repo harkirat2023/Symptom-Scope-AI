@@ -21,17 +21,24 @@ export interface ChatSession {
   } | null;
 }
 
+export interface PendingAction {
+  id: string;
+  session_id: string;
+  tool: string;
+  args: Record<string, unknown>;
+  summary: string;
+  status: string;
+  created_at: string;
+  expires_at: string;
+}
+
 export interface ChatMessage {
   id: string;
   session_id: string;
   role: "user" | "assistant";
   content: string;
   created_at: string;
-}
-
-export interface ChatSessionList {
-  sessions: ChatSession[];
-  total: number;
+  pending_action?: PendingAction | null;
 }
 
 export async function createChatSession(
@@ -47,14 +54,6 @@ export async function createChatSession(
     body: JSON.stringify({ prediction_id: predictionId ?? null }),
   });
   if (!response.ok) throw new Error("Failed to create chat session");
-  return response.json();
-}
-
-export async function getChatSessions(token?: string): Promise<ChatSessionList> {
-  const response = await fetch(`${API_URL}/api/v1/chat/sessions`, {
-    headers: authHeaders(token),
-  });
-  if (!response.ok) throw new Error("Failed to fetch chat sessions");
   return response.json();
 }
 
@@ -78,14 +77,25 @@ export async function sendChatMessage(
   return response.json();
 }
 
-export async function getChatMessages(
-  sessionId: string,
+export async function confirmChatAction(
+  pendingActionId: string,
+  decision: "approve" | "decline",
   token?: string
-): Promise<ChatMessage[]> {
-  const response = await fetch(
-    `${API_URL}/api/v1/chat/messages/${sessionId}`,
-    { headers: authHeaders(token) }
-  );
-  if (!response.ok) throw new Error("Failed to fetch messages");
+): Promise<ChatMessage> {
+  const response = await fetch(`${API_URL}/api/v1/chat/confirm`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token),
+    },
+    body: JSON.stringify({
+      pending_action_id: pendingActionId,
+      decision,
+    }),
+  });
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(err || "Failed to process your decision");
+  }
   return response.json();
 }

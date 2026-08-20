@@ -86,17 +86,20 @@ class LLMService:
         user_message: str,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        json_mode: bool = False,
     ) -> str:
         """Invoke via LangChain + Groq."""
         messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_message)]
-        kwargs = {}
+        kwargs: dict[str, Any] = {}
         if temperature is not None:
             kwargs["temperature"] = temperature
         if max_tokens is not None:
             kwargs["max_tokens"] = max_tokens
+        if json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
         result = await asyncio.wait_for(
             self.groq_llm.ainvoke(messages, **kwargs),
-            timeout=30.0,
+            timeout=45.0,
         )
         return result.content
 
@@ -108,22 +111,20 @@ class LLMService:
         user_message: str,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        json_mode: bool = False,
     ) -> str:
         """
-        Send a message to the LLM with automatic fallback chain.
+        Send a message to the LLM.
 
-        Fallback order:
-        1. LangChain + Gemini
-        2. LangChain + Groq (if GROQ_API_KEY configured)
-        3. Graceful error message
+        Only the free Groq provider (LangChain + GROQ_API_KEY) is used.
+        When json_mode is True the model is asked to produce a valid JSON
+        object (Groq JSON mode).
         """
-        # Only use Groq as the primary and required LLM provider. This aligns with
-        # the free-Groq-only requirement: do not rely on Gemini/OpenAI.
         if settings.groq_api_key:
             try:
                 _logger.info("LLM invoke: attempting LangChain + Groq")
                 return await self._invoke_groq_langchain(
-                    system_prompt, user_message, temperature, max_tokens
+                    system_prompt, user_message, temperature, max_tokens, json_mode
                 )
             except Exception as e:
                 _logger.exception("LangChain + Groq invocation failed")
@@ -197,55 +198,6 @@ class LLMService:
             user_content = f"Context:\n{context}\n\nQuestion:\n{question}"
         return await self.invoke(prompt, user_content)
 
-    async def chat(
-        self,
-        message: str,
-        history: list[dict],
-        prediction_context: dict | None = None,
-    ) -> str:
-        """General chat with prediction context."""
-        prompt = _load_prompt("chat.txt")
-        if not prompt:
-            prompt = _default_chat_prompt()
-
-        ctx_lines = []
-        if prediction_context:
-            ctx_lines.append("Prediction Context:")
-            for k, v in prediction_context.items():
-                ctx_lines.append(f"- {k}: {v}")
-        context_str = "\n".join(ctx_lines) if ctx_lines else "No active prediction."
-
-        filled_prompt = prompt.replace("{prediction_context}", context_str)
-
-        messages = [SystemMessage(content=filled_prompt)]
-        for msg in history[-10:]:
-            role = msg.get("role", "user")
-            content = msg.get("content", "")
-            if role == "user":
-                messages.append(HumanMessage(content=content))
-            else:
-                messages.append(SystemMessage(content=content))
-        messages.append(HumanMessage(content=message))
-
-        # Use the invoke method with fallback for the chat
-        last_error = None
-
-        # Use Groq as the single primary provider for chat.
-        if settings.groq_api_key:
-            try:
-                _logger.info("LLM chat: invoking Groq provider")
-                result = await asyncio.wait_for(
-                    self.groq_llm.ainvoke(messages),
-                    timeout=30.0,
-                )
-                return result.content
-            except Exception:
-                _logger.exception("LangChain + Groq chat failed")
-                raise
-
-        _logger.error("GROQ_API_KEY is not configured; chat cannot be fulfilled")
-        raise RuntimeError("GROQ_API_KEY is required for chat LLM")
-
 
 # --- Default Prompts ---
 
@@ -275,23 +227,4 @@ def _default_medical_qa_prompt() -> str:
         "If the question is not health-related, politely refuse and ask for a medical question. "
         "Always include: 'This information is for educational purposes only. "
         "Consult a healthcare professional for medical advice.'\n\n{user_content}"
-    )
-
-
-def _default_chat_prompt() -> str:
-    return (
-        "You are a helpful health education assistant for SymptomScope AI. "
-        "You provide educational information only. You NEVER diagnose, "
-        "prescribe medication, or replace professional medical advice.\n\n"
-        "{prediction_context}\n\n"
-        "Rules:\n"
-        "1. Always remind users to consult a healthcare professional.\n"
-        "2. Explain medical terms in simple language.\n"
-        "3. Do not ask for or store personal health information.\n"
-        "4. If asked about emergencies, tell them to call emergency services immediately.\n"
-        "5. Keep responses concise and educational.\n"
-        "6. Do not provide dosage recommendations.\n"
-        "7. If unsure, say 'I cannot provide that information — please consult your doctor.'\n"
-        "8. If the question is not health-related, politely refuse.\n\n"
-        "Medical Disclaimer: This information is for educational purposes only."
     )

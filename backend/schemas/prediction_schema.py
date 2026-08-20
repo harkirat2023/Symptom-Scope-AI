@@ -46,6 +46,11 @@ class PredictionRecord(BaseModel):
     confidence: float
     severity: str
     timestamp: str
+    age: int | None = None
+    gender: str | None = None
+    existing_conditions: list[str] = Field(default_factory=list)
+    symptom_duration: str | None = None
+    pain_level: int | None = None
 
 
 class PredictionResponse(BaseModel):

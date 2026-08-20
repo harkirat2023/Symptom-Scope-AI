@@ -16,10 +16,6 @@ interface RiskScoreState {
   getToken: (() => Promise<string | null>) | null;
 
   setGetToken: (fn: () => Promise<string | null>) => void;
-  setScore: (score: RiskScoreResponse) => void;
-  setHistory: (history: RiskScoreHistoryResponse["history"]) => void;
-  setTips: (tips: string[]) => void;
-  setProfile: (profile: UserHealthProfileResponse | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 
@@ -41,10 +37,6 @@ export const useRiskScoreStore = create<RiskScoreState>((set, get) => ({
 
   setGetToken: (fn) => set({ getToken: fn }),
 
-  setScore: (score) => set({ score }),
-  setHistory: (history) => set({ history }),
-  setTips: (tips) => set({ tips }),
-  setProfile: (profile) => set({ profile }),
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
 

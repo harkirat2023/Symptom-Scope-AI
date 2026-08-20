@@ -93,12 +93,3 @@ class ExplainabilityService:
             "base_value": round(base_value, 4),
             "top_contributing_symptoms": contributions[:5],
         }
-
-    def get_predicted_class_index(self, encoded_features: np.ndarray) -> int:
-        features_2d = encoded_features.reshape(1, -1)
-        return int(self.random_forest.predict(features_2d)[0])
-
-    def get_top_probability(self, encoded_features: np.ndarray) -> float:
-        features_2d = encoded_features.reshape(1, -1)
-        probs = self.random_forest.predict_proba(features_2d)
-        return float(probs[0].max())

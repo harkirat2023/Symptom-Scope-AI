@@ -10,8 +10,10 @@ from schemas.chat_schema import (
     ChatSessionResponse,
     ChatSessionListResponse,
     ChatMessageResponse,
+    ConfirmActionRequest,
     MessageSend,
 )
+from services.agent_service import AgentService
 from services.chat_service import ChatService
 from services.llm_service import LLMService
 from services.rag_service import RAGService
@@ -24,6 +26,7 @@ _user_dep = Depends(get_current_user)
 _chat_service_dep = Depends()
 _chat_repository_dep = Depends()
 _llm_service_dep = Depends()
+_agent_service_dep = Depends()
 
 _logger = logging.getLogger("symptomscope.api.chat")
 
@@ -120,6 +123,7 @@ async def send_message(
     user_id: str = _user_dep,
     chat_service: ChatService = _chat_service_dep,
     chat_repository: ChatRepository = _chat_repository_dep,
+    agent_service: AgentService = _agent_service_dep,
 ):
     session = await chat_repository.get_session(input_data.session_id)
     if not session:
@@ -140,18 +144,20 @@ async def send_message(
     history = await chat_repository.get_session_messages(input_data.session_id)
 
     try:
-        response = await chat_service.process_message(
+        response, pending_action = await agent_service.run_turn(
+            user_id,
+            input_data.session_id,
             input_data.content,
             history,
-            prediction_context=session.get("predictionContext"),
+            session_prediction_context=session.get("predictionContext"),
         )
     except Exception as e:  # noqa: BLE001
-        _logger.warning("Chat message processing failed: %s", e)
-        # LLMService already has fallback built-in, but catch any unexpected errors
+        _logger.warning("Agent message processing failed: %s", e)
         response = (
             "I'm sorry, I couldn't process that request right now. "
             "Please try again later or consult a healthcare professional."
         )
+        pending_action = None
 
     assistant_msg = await chat_repository.add_message(
         input_data.session_id, "assistant", response
@@ -163,6 +169,60 @@ async def send_message(
         role="assistant",
         content=response,
         created_at=assistant_msg["createdAt"],
+        pending_action=pending_action,
+    )
+
+
+@router.post("/chat/confirm", response_model=ChatMessageResponse)
+@limiter.limit("5/minute")
+async def confirm_action(
+    request: Request,
+    input_data: ConfirmActionRequest,
+    user_id: str = _user_dep,
+    chat_repository: ChatRepository = _chat_repository_dep,
+    agent_service: AgentService = _agent_service_dep,
+):
+    pending_action_id = input_data.pending_action_id
+    action = None
+    try:
+        from repositories.agent_repository import PendingActionRepository
+
+        action = await PendingActionRepository().find_by_id(pending_action_id)
+    except Exception:  # noqa: BLE001
+        action = None
+    if not action:
+        raise HTTPException(status_code=404, detail="Action not found")
+    if action.get("userId") != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if action.get("status") != "pending":
+        raise HTTPException(status_code=400, detail="This action has already been handled")
+
+    session_id = action.get("sessionId")
+    session = await chat_repository.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Chat session not found")
+
+    try:
+        response, pending_action = await agent_service.confirm_action(
+            user_id, pending_action_id, input_data.decision
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:  # noqa: BLE001
+        _logger.warning("Confirm action failed: %s", e)
+        raise HTTPException(status_code=500, detail="Could not process your decision")
+
+    assistant_msg = await chat_repository.add_message(
+        session_id, "assistant", response
+    )
+
+    return ChatMessageResponse(
+        _id=str(assistant_msg.pop("_id")),
+        session_id=session_id,
+        role="assistant",
+        content=response,
+        created_at=assistant_msg["createdAt"],
+        pending_action=pending_action,
     )
 
 
@@ -194,10 +254,6 @@ async def get_messages(
         )
         for m in messages
     ]
-
-
-import logging
-_logger = logging.getLogger("symptomscope.api.chat")
 
 
 @router.post("/chat/explain")

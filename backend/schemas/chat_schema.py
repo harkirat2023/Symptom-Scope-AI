@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
+from typing import Literal
 
 
 class ChatSessionCreate(BaseModel):
@@ -22,12 +22,29 @@ class MessageSend(BaseModel):
     content: str = Field(..., min_length=1, max_length=500)
 
 
+class PendingActionResponse(BaseModel):
+    id: str
+    session_id: str
+    tool: str
+    args: dict
+    summary: str
+    status: str
+    created_at: str
+    expires_at: str
+
+
 class ChatMessageResponse(BaseModel):
     id: str = Field(validation_alias="_id")
     session_id: str
     role: str
     content: str
     created_at: str
+    pending_action: PendingActionResponse | None = None
+
+
+class ConfirmActionRequest(BaseModel):
+    pending_action_id: str
+    decision: Literal["approve", "decline"]
 
 
 class ChatSessionListResponse(BaseModel):

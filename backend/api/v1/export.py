@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from fastapi.responses import Response
 from auth.dependency import get_current_user
 from repositories.prediction_repository import PredictionRepository
+from repositories.recovery_repository import RecoveryPlanRepository
 from repositories.risk_score_repository import RiskScoreRepository
 from services.report_export_service import ReportExportService
 from utils.rate_limit import limiter
@@ -80,7 +81,16 @@ async def export_pdf(
 
     try:
         if detailed:
-            pdf_bytes = export_service.generate_pdf_detailed(predictions)
+            recovery_plan = None
+            try:
+                recovery_plan = await RecoveryPlanRepository().find_latest_by_user(
+                    user_id
+                )
+            except Exception:
+                recovery_plan = None
+            pdf_bytes = export_service.generate_pdf_detailed(
+                predictions, recovery_plan=recovery_plan
+            )
         else:
             pdf_bytes = export_service.generate_pdf(
                 predictions, risk_score=risk_score, risk_category=risk_category

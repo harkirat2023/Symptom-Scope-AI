@@ -26,6 +26,8 @@ class RecoveryPlanResponse(BaseModel):
     confidence: float
     severity: str
     symptoms: List[str]
+    what_it_means: str = ""
+    what_to_do: List[str] = []
     recovery_timeline: List[str] = []
     diet_recommendations: Dict[str, Any] = {}
     foods_to_eat: List[str] = []
@@ -35,6 +37,7 @@ class RecoveryPlanResponse(BaseModel):
     exercise_recommendation: str = ""
     daily_physical_activity: List[str] = []
     lifestyle_changes: List[str] = []
+    personalized_recommendations: List[str] = []
     medicines_disclaimer: str = ""
     when_to_visit_doctor: List[str] = []
     emergency_warning_signs: List[str] = []

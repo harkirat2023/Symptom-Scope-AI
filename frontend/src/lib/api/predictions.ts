@@ -4,6 +4,7 @@ export interface TopContributingSymptom {
   symptom: string;
   importance: number;
   shap_value?: number | null;
+  relative_contribution_pct?: number | null;
 }
 
 export interface ConfidenceInfo {
@@ -21,9 +22,8 @@ export interface EmergencyInfo {
 }
 
 export interface ShapExplanation {
-  shap_values?: number[];
-  base_value?: number;
-  features?: string[];
+  base_value: number;
+  feature_values: TopContributingSymptom[];
 }
 
 export interface PredictionResponse {
@@ -79,26 +79,6 @@ export interface DoctorResponse {
   consultation_fee?: number;
   image_url?: string;
   bio?: string;
-}
-
-export interface DoctorSearchResponse {
-  doctors: DoctorResponse[];
-  total: number;
-  specialties: string[];
-  locations: string[];
-}
-
-export interface SymptomResult {
-  id: string;
-  name: string;
-  category: string;
-  relevance_score?: number | null;
-}
-
-export interface SymptomSearchResponse {
-  results: SymptomResult[];
-  total: number;
-  categories: string[];
 }
 
 export interface HospitalResponse {
@@ -167,52 +147,6 @@ export async function fetchUserReports(
     if (response.status === 404) return null;
     throw new Error("Failed to fetch reports");
   }
-  return response.json();
-}
-
-export async function fetchDoctors(
-  params?: {
-    q?: string;
-    specialty?: string;
-    location?: string;
-    sort_by?: string;
-    sort_order?: string;
-    limit?: number;
-  },
-  token?: string
-): Promise<DoctorSearchResponse> {
-  const searchParams = new URLSearchParams();
-  if (params?.q) searchParams.set("q", params.q);
-  if (params?.specialty) searchParams.set("specialty", params.specialty);
-  if (params?.location) searchParams.set("location", params.location);
-  if (params?.sort_by) searchParams.set("sort_by", params.sort_by);
-  if (params?.sort_order) searchParams.set("sort_order", params.sort_order);
-  if (params?.limit) searchParams.set("limit", String(params.limit));
-  const response = await fetch(
-    `${API_URL}/api/v1/doctors?${searchParams.toString()}`,
-    { headers: authHeaders(token) }
-  );
-  if (!response.ok) throw new Error("Failed to fetch doctors");
-  return response.json();
-}
-
-export async function fetchSymptoms(
-  params?: {
-    q?: string;
-    category?: string;
-    limit?: number;
-  },
-  token?: string
-): Promise<SymptomSearchResponse> {
-  const searchParams = new URLSearchParams();
-  if (params?.q) searchParams.set("q", params.q);
-  if (params?.category) searchParams.set("category", params.category);
-  if (params?.limit) searchParams.set("limit", String(params.limit));
-  const response = await fetch(
-    `${API_URL}/api/v1/symptoms/search?${searchParams.toString()}`,
-    { headers: authHeaders(token) }
-  );
-  if (!response.ok) throw new Error("Failed to fetch symptoms");
   return response.json();
 }
 
@@ -317,9 +251,9 @@ export interface HealthSummary {
 }
 
 export interface RiskScoreAnalytics {
-  current_score: number;
-  category: "Low" | "Medium" | "High";
-  breakdown: Record<string, number>;
+  current_score: number | null;
+  category: string | null;
+  last_computed: string | null;
 }
 
 export interface AnalyticsResponse {

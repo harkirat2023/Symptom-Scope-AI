@@ -30,7 +30,7 @@ def get_database() -> AsyncIOMotorDatabase:
             maxPoolSize=settings.mongodb_max_pool_size,
             minPoolSize=settings.mongodb_min_pool_size,
         )
-    _db = _client["symptomscope"]
+    _db = _client[settings.mongodb_db_name]
     return _db
 
 
@@ -64,6 +64,11 @@ async def ensure_indexes():
 
     user_health_profiles = db["user_health_profiles"]
     await user_health_profiles.create_index("userId", unique=True)
+
+    pending_actions = db["pending_actions"]
+    await pending_actions.create_index("userId")
+    await pending_actions.create_index([("userId", 1), ("status", 1)])
+    await pending_actions.create_index("expiresAt")
 
     from repositories.doctor_repository import ensure_indexes as doctor_indexes, seed_doctors
     from repositories.hospital_repository import ensure_indexes as hospital_indexes, seed_hospitals

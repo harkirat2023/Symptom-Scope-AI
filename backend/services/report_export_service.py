@@ -198,27 +198,36 @@ class ReportExportService:
 
         elements.append(Paragraph("Prediction History", heading_style))
         header = ["Date", "Symptoms", "Prediction", "Confidence", "Severity"]
-        table_data = [header]
+        table_cell_style = ParagraphStyle(
+            "CellNormal", parent=styles["Normal"],
+            fontSize=8, leading=10,
+        )
+        header_style = ParagraphStyle(
+            "CellHeader", parent=styles["Normal"],
+            fontSize=9, leading=11, textColor=HexColor("#ffffff"),
+        )
+
+        def wrap(text: str) -> Paragraph:
+            return Paragraph(text, table_cell_style)
+
+        table_data = [[Paragraph(h, header_style) for h in header]]
         for p in predictions:
             symptoms_short = "; ".join(p.symptoms[:3]) if p.symptoms else ""
             if len(p.symptoms) > 3:
                 symptoms_short += "..."
             table_data.append([
-                p.timestamp[:10] if p.timestamp else "",
-                symptoms_short,
-                p.prediction,
-                f"{p.confidence:.1f}%",
-                p.severity,
+                wrap(p.timestamp[:10] if p.timestamp else ""),
+                wrap(symptoms_short),
+                wrap(p.prediction),
+                wrap(f"{p.confidence:.1f}%"),
+                wrap(p.severity),
             ])
 
         if table_data:
             prediction_table = Table(table_data, colWidths=[65, 90, 90, 60, 55])
             prediction_table.setStyle(TableStyle([
                 ("BACKGROUND", (0, 0), (-1, 0), HexColor("#2563eb")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), HexColor("#ffffff")),
-                ("FONTSIZE", (0, 0), (-1, 0), 9),
-                ("FONTSIZE", (0, 1), (-1, -1), 8),
-                ("ALIGN", (3, 0), (4, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("GRID", (0, 0), (-1, -1), 0.5, HexColor("#e2e8f0")),
                 ("ROWBACKGROUNDS", (0, 1), (-1, -1),
                  [HexColor("#ffffff"), HexColor("#f8fafc")]),
@@ -240,7 +249,11 @@ class ReportExportService:
         doc.build(elements)
         return buffer.getvalue()
 
-    def generate_pdf_detailed(self, predictions: list[PredictionRecord]) -> bytes:
+    def generate_pdf_detailed(
+        self,
+        predictions: list[PredictionRecord],
+        recovery_plan: dict | None = None,
+    ) -> bytes:
         try:
             from reportlab.lib.pagesizes import A4
             from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -311,6 +324,31 @@ class ReportExportService:
         ))
         elements.append(Spacer(1, 12 * mm))
 
+        if recovery_plan:
+            elements.append(Paragraph("Recovery Plan Summary", heading_style))
+            plan_data = recovery_plan.get("planData", {})
+            elements.append(Paragraph(
+                f"<b>Condition:</b> {recovery_plan.get('disease', 'N/A')} "
+                f"(confidence {recovery_plan.get('confidence', 0):.1f}%, severity "
+                f"{recovery_plan.get('severity', 'N/A')})",
+                normal_style,
+            ))
+            what_it_means = plan_data.get("what_it_means")
+            if what_it_means:
+                elements.append(Paragraph(
+                    f"<b>What it means:</b> {what_it_means}", normal_style,
+                ))
+            what_to_do = plan_data.get("what_to_do") or []
+            if what_to_do:
+                elements.append(Paragraph("<b>What to do now:</b>", normal_style))
+                for item in what_to_do[:4]:
+                    elements.append(Paragraph(f"• {item}", bullet_style))
+            personalized = plan_data.get("personalized_recommendations") or []
+            if personalized:
+                elements.append(Paragraph("<b>Personalized recommendations:</b>", normal_style))
+                for item in personalized[:4]:
+                    elements.append(Paragraph(f"• {item}", bullet_style))
+
         elements.append(Paragraph("Complete Prediction Details", heading_style))
 
         for i, p in enumerate(predictions, 1):
@@ -333,6 +371,29 @@ class ReportExportService:
             elements.append(Paragraph(
                 f"<b>Severity:</b> {p.severity}", normal_style,
             ))
+
+            if p.age is not None or p.gender is not None:
+                details = []
+                if p.age is not None:
+                    details.append(f"Age: {p.age}")
+                if p.gender:
+                    details.append(f"Gender: {p.gender}")
+                elements.append(Paragraph(
+                    f"<b>Demographics:</b> {' | '.join(details)}", normal_style,
+                ))
+            if p.existing_conditions:
+                elements.append(Paragraph(
+                    f"<b>Existing Conditions:</b> {', '.join(p.existing_conditions)}",
+                    normal_style,
+                ))
+            if p.symptom_duration:
+                elements.append(Paragraph(
+                    f"<b>Symptom Duration:</b> {p.symptom_duration}", normal_style,
+                ))
+            if p.pain_level is not None:
+                elements.append(Paragraph(
+                    f"<b>Pain Level:</b> {p.pain_level}/10", normal_style,
+                ))
 
             specialist = get_specialist(p.prediction)
             elements.append(Paragraph(

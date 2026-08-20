@@ -272,6 +272,49 @@ function RecoveryPlanContent() {
 
               <TabsContent value="overview">
                 <div className="space-y-6">
+                  {/* What It Means */}
+                  {planToShow.what_it_means && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <HeartPulse className="text-primary" />
+                          What This Condition Means
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm leading-relaxed">{planToShow.what_it_means}</p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* What to Do */}
+                  {planToShow.what_to_do?.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <ListTodo className="text-primary" />
+                          What to Do Now
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {planToShow.what_to_do.map((item, index) => (
+                            <motion.div
+                              key={index}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                              className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg"
+                            >
+                              <CheckCircle className="size-5 text-primary shrink-0 mt-0.5" />
+                              <p className="text-sm">{item}</p>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   {/* Recovery Timeline */}
                   <Card>
                     <CardHeader>
@@ -480,6 +523,34 @@ function RecoveryPlanContent() {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Personalized Recommendations */}
+                  {planToShow.personalized_recommendations?.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <HeartPulse className="text-primary" />
+                          Personalized Recommendations
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {planToShow.personalized_recommendations.map((item, index) => (
+                            <motion.div
+                              key={index}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                              className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg"
+                            >
+                              <CheckCircle className="size-5 text-primary shrink-0 mt-0.5" />
+                              <p className="text-sm">{item}</p>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </TabsContent>
 

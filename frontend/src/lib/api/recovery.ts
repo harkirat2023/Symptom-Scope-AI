@@ -8,6 +8,8 @@ export interface RecoveryPlanResponse {
   confidence: number;
   severity: string;
   symptoms: string[];
+  what_it_means: string;
+  what_to_do: string[];
   recovery_timeline: string[];
   diet_recommendations: Record<string, unknown>;
   foods_to_eat: string[];
@@ -17,6 +19,7 @@ export interface RecoveryPlanResponse {
   exercise_recommendation: string;
   daily_physical_activity: string[];
   lifestyle_changes: string[];
+  personalized_recommendations: string[];
   medicines_disclaimer: string;
   when_to_visit_doctor: string[];
   emergency_warning_signs: string[];
@@ -28,15 +31,21 @@ export interface RecoveryPlanResponse {
   version: number;
 }
 
-export interface RecoveryPlanListResponse {
-  plans: RecoveryPlanResponse[];
-  total: number;
-}
-
 function authHeaders(token?: string): Record<string, string> {
   const headers: Record<string, string> = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
   return headers;
+}
+
+async function parseError(response: Response, fallback: string): Promise<Error> {
+  try {
+    const data = await response.json();
+    const detail =
+      typeof data?.detail === "string" ? data.detail : fallback;
+    return new Error(detail);
+  } catch {
+    return new Error(fallback);
+  }
 }
 
 export async function generateRecoveryPlan(
@@ -52,8 +61,7 @@ export async function generateRecoveryPlan(
     body: JSON.stringify({ prediction_id: predictionId }),
   });
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error || "Failed to generate recovery plan");
+    throw await parseError(response, "Failed to generate recovery plan");
   }
   return response.json();
 }
@@ -71,16 +79,6 @@ export async function getLatestRecoveryPlan(
   return response.json();
 }
 
-export async function getRecoveryPlanHistory(
-  token?: string
-): Promise<RecoveryPlanListResponse> {
-  const response = await fetch(`${API_URL}/api/v1/recovery-plan/history`, {
-    headers: authHeaders(token),
-  });
-  if (!response.ok) throw new Error("Failed to fetch recovery plan history");
-  return response.json();
-}
-
 export async function regenerateRecoveryPlan(
   planId: string,
   token?: string
@@ -94,8 +92,7 @@ export async function regenerateRecoveryPlan(
     body: JSON.stringify({ plan_id: planId }),
   });
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error || "Failed to regenerate recovery plan");
+    throw await parseError(response, "Failed to regenerate recovery plan");
   }
   return response.json();
 }

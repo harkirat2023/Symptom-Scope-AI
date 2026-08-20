@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const EXAMPLE_PROMPTS = [
-  { label: "Can I exercise?", prompt: "Can I exercise during my recovery?" },
-  { label: "What should I eat?", prompt: "What should I eat and avoid?" },
-  { label: "How long will recovery take?", prompt: "How long will my recovery take?" },
-  { label: "What symptoms to monitor?", prompt: "What symptoms should I monitor closely?" },
+  { label: "Create my recovery plan", prompt: "Please generate my personalized recovery plan" },
+  { label: "Set up medication reminders", prompt: "Set up a reminder for my medication in the morning" },
+  { label: "Save my email for alerts", prompt: "Save my email so I can get reminder notifications" },
+  { label: "What should I eat?", prompt: "What should I eat and avoid during recovery?" },
 ] as const;
 
 interface EmptyStateProps {
@@ -31,8 +31,8 @@ export function EmptyState({ onPromptClick, className }: EmptyStateProps) {
       </div>
       <h3 className="mb-2 text-lg font-semibold text-foreground">Health Assistant</h3>
       <p className="mb-6 max-w-sm text-sm text-muted-foreground">
-        Ask questions about your recovery plan, symptoms, or general wellness.
-        I have access to your prediction context for personalized guidance.
+        I can guide your recovery, set up medication reminders, save your email
+        for alerts, and answer questions about your condition.
       </p>
       <div className="w-full max-w-sm space-y-2" role="list" aria-label="Example prompts">
         {EXAMPLE_PROMPTS.map((item) => (

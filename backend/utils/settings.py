@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     # MongoDB
     mongodb_uri: str = "mongodb://localhost:27017/symptomscope"
+    mongodb_db_name: str = "symptomscope"
     mongodb_max_pool_size: int = 10
     mongodb_min_pool_size: int = 2
 
@@ -24,6 +25,9 @@ class Settings(BaseSettings):
 
     # Security
     secret_key: str = "default-insecure-secret-key-change-in-production"
+
+    # Public base URL used in email links (e.g. https://symptomscope.vercel.app)
+    public_base_url: str = ""
 
     # Logging
     log_level: str = "INFO"
@@ -43,11 +47,11 @@ class Settings(BaseSettings):
     gemini_temperature: float = 0.7
     gemini_max_tokens: int = 1024
 
-    # Groq LLM (LangChain-based fallback)
+    # Groq LLM (LangChain-based; the only LLM provider used by the app)
     groq_api_key: Optional[str] = None
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "openai/gpt-oss-120b"
     groq_temperature: float = 0.7
-    groq_max_tokens: int = 1024
+    groq_max_tokens: int = 2048
 
     # RAG / ChromaDB
     chromadb_path: str = "./ml/rag/chromadb"

@@ -46,7 +46,6 @@ class LlmClient:
 class ChatService:
     def __init__(self):
         self.llm_client = LlmClient()
-        self._llm = LLMService()
 
     def build_system_prompt(self, prediction_context: dict | None = None) -> str:
         if prediction_context:
@@ -67,22 +66,6 @@ class ChatService:
             severity="unknown",
             symptoms="none specified",
             precautions="none specified",
-        )
-
-    def build_welcome_message(
-        self, prediction_context: dict | None = None
-    ) -> str:
-        if prediction_context:
-            disease = prediction_context.get("disease", "")
-            return (
-                f"I see you're looking at results for **{disease}**. "
-                "I can help explain this condition, the symptoms involved, "
-                "or what the precautions mean. What would you like to know?"
-            )
-        return (
-            "Hello! I'm your SymptomScope health assistant. "
-            "I can help answer questions about symptoms, conditions, and health information. "
-            "How can I help you today?"
         )
 
     def _add_disclaimer(self, content: str) -> str:
@@ -133,47 +116,3 @@ class ChatService:
             "symptoms": symptoms or [],
             "precautions": precautions or [],
         }
-
-    # --- New: LLMService-powered features ---
-
-    async def explain_prediction(
-        self,
-        disease: str,
-        confidence: float,
-        severity: str,
-        symptoms: list[str],
-        precautions: list[str],
-        alternatives: list[str],
-    ) -> str:
-        return await self._llm.explain_prediction(
-            disease=disease,
-            confidence=confidence,
-            severity=severity,
-            symptoms=symptoms,
-            precautions=precautions,
-            alternatives=alternatives,
-        )
-
-    async def generate_follow_up_questions(
-        self,
-        disease: str,
-        confidence: float,
-        severity: str,
-        symptoms: list[str],
-    ) -> list[str]:
-        return await self._llm.generate_follow_up_questions(
-            disease=disease,
-            confidence=confidence,
-            severity=severity,
-            symptoms=symptoms,
-        )
-
-    async def answer_medical_question(
-        self,
-        question: str,
-        context: str | None = None,
-    ) -> str:
-        return await self._llm.answer_medical_question(
-            question=question,
-            context=context,
-        )

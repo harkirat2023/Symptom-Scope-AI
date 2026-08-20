@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
 from schemas.reminder_schema import (
     ReminderCreate,
     ReminderUpdate,
@@ -10,9 +11,73 @@ from schemas.reminder_schema import (
 )
 from repositories.reminder_repository import ReminderRepository
 from auth.dependency import get_current_user
+from services.email_service import EmailService
 from utils.rate_limit import limiter
 
 router = APIRouter()
+
+
+@router.get(
+    "/reminders/{reminder_id}/action",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def reminder_email_action(
+    reminder_id: str,
+    action: str = Query(..., pattern="^(taken|missed)$"),
+    user: str = Query(...),
+    expires: str = Query(...),
+    sig: str = Query(...),
+    reminder_repository: ReminderRepository = Depends(),
+):
+    """Public, signed one-click link handler used from reminder emails."""
+    email_service = EmailService()
+    if not email_service.verify_action_signature(
+        reminder_id, action, user, expires, sig
+    ):
+        return HTMLResponse(
+            content=_action_page("Invalid or expired link", "This link is invalid or has expired. Please use the app to log your status."),
+            status_code=400,
+        )
+
+    existing = await reminder_repository.find_by_id(reminder_id)
+    if not existing or existing.get("userId") != user:
+        return HTMLResponse(
+            content=_action_page("Reminder not found", "We couldn't find this reminder."),
+            status_code=404,
+        )
+
+    status = "taken" if action == "taken" else "missed"
+    await reminder_repository.log_status(reminder_id, user, status, note="Via email link")
+    message = (
+        "Great — marked as taken."
+        if action == "taken"
+        else "Noted — marked as missed."
+    )
+    return HTMLResponse(content=_action_page("Status logged", message))
+
+
+def _action_page(title: str, message: str) -> str:
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title} - SymptomScope</title>
+  <style>
+    body {{ font-family: system-ui, sans-serif; background: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }}
+    .card {{ background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px; max-width: 420px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }}
+    h1 {{ font-size: 20px; color: #0f172a; margin: 0 0 8px; }}
+    p {{ color: #475569; font-size: 14px; line-height: 1.6; margin: 0; }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>{title}</h1>
+    <p>{message}</p>
+  </div>
+</body>
+</html>"""
 
 
 @router.post("/reminders", response_model=ReminderResponse)

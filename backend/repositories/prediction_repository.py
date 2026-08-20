@@ -51,6 +51,11 @@ class PredictionRepository:
             confidence=confidence,
             severity=severity,
             timestamp=record["timestamp"],
+            age=age,
+            gender=gender,
+            existing_conditions=existing_conditions or [],
+            symptom_duration=symptom_duration,
+            pain_level=pain_level,
         )
 
     async def find_by_id(self, prediction_id: str) -> PredictionRecord | None:
@@ -67,6 +72,11 @@ class PredictionRepository:
             confidence=d.get("confidence", 0.0),
             severity=d.get("severity", ""),
             timestamp=d.get("timestamp", ""),
+            age=d.get("age"),
+            gender=d.get("gender"),
+            existing_conditions=d.get("existingConditions", []),
+            symptom_duration=d.get("symptomDuration"),
+            pain_level=d.get("painLevel"),
         )
 
     async def find_by_user(
@@ -84,6 +94,8 @@ class PredictionRepository:
             projection={
                 "_id": 1, "userId": 1, "symptoms": 1, "prediction": 1,
                 "confidence": 1, "severity": 1, "timestamp": 1,
+                "age": 1, "gender": 1, "existingConditions": 1,
+                "symptomDuration": 1, "painLevel": 1,
             },
         ).sort("timestamp", -1).limit(100)
         docs = await cursor.to_list(length=100)
@@ -96,6 +108,11 @@ class PredictionRepository:
                 confidence=d.get("confidence", 0.0),
                 severity=d.get("severity", ""),
                 timestamp=d.get("timestamp", ""),
+                age=d.get("age"),
+                gender=d.get("gender"),
+                existing_conditions=d.get("existingConditions", []),
+                symptom_duration=d.get("symptomDuration"),
+                pain_level=d.get("painLevel"),
             )
             for d in docs
         ]
@@ -122,4 +139,9 @@ class PredictionRepository:
             confidence=d.get("confidence", 0.0),
             severity=d.get("severity", ""),
             timestamp=d.get("timestamp", ""),
+            age=d.get("age"),
+            gender=d.get("gender"),
+            existing_conditions=d.get("existingConditions", []),
+            symptom_duration=d.get("symptomDuration"),
+            pain_level=d.get("painLevel"),
         )

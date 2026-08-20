@@ -20,6 +20,7 @@ import { useChatStore } from "@/lib/stores/chat-store";
 import {
   createChatSession,
   sendChatMessage,
+  confirmChatAction,
 } from "@/lib/api/chat";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
@@ -37,11 +38,13 @@ export function ChatPanel() {
     isLoading,
     isSending,
     predictionContext,
+    pendingActions,
     error,
     setSession,
     addMessage,
     setLoading,
     setSending,
+    setPendingAction,
     setError,
     clearChat,
   } = useChatStore();
@@ -146,6 +149,30 @@ export function ChatPanel() {
     }
   }, [clearChat, isOpen, getToken, setLoading, setError, setSession]);
 
+  const handleResolveAction = useCallback(
+    async (pendingActionId: string, decision: "approve" | "decline") => {
+      if (!session) return;
+      setPendingAction(pendingActionId, "processing");
+      setError(null);
+      try {
+        const token = await getToken();
+        const response = await confirmChatAction(
+          pendingActionId,
+          decision,
+          token ?? undefined
+        );
+        setPendingAction(pendingActionId, "resolved");
+        addMessage(response);
+      } catch (err) {
+        setPendingAction(pendingActionId, "pending");
+        setError(
+          err instanceof Error ? err.message : "Could not process your decision"
+        );
+      }
+    },
+    [session, getToken, setPendingAction, setError, addMessage]
+  );
+
   const isOnline = !isLoading && !isSending && !error;
 
   return (
@@ -191,7 +218,7 @@ export function ChatPanel() {
                     Health Assistant
                   </h2>
                   <p className="truncate text-xs text-muted-foreground">
-                    Personalized Recovery Assistant
+                    Goal-driven health assistant
                   </p>
                 </div>
               </div>
@@ -276,6 +303,9 @@ export function ChatPanel() {
                     role={msg.role}
                     content={msg.content}
                     id={msg.id}
+                    pendingAction={msg.pending_action}
+                    pendingStatus={msg.pending_action ? pendingActions[msg.pending_action.id] ?? "pending" : undefined}
+                    onResolve={handleResolveAction}
                   />
                 ))}
 
@@ -300,7 +330,7 @@ export function ChatPanel() {
               onSend={handleSend}
               isSending={isSending}
               disabled={isLoading}
-              placeholder="Ask anything about your recovery..."
+              placeholder="Tell me your health goal or ask a question..."
             />
 
             {/* Disclaimer */}
