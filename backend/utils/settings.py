@@ -1,5 +1,5 @@
+
 from pydantic_settings import BaseSettings
-from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     dev_mode: bool = True
 
     # Clerk Authentication (at least one required when not in dev mode)
-    clerk_jwks_url: Optional[str] = None
-    clerk_issuer: Optional[str] = None
+    clerk_jwks_url: str | None = None
+    clerk_issuer: str | None = None
 
     # Security
     secret_key: str = "default-insecure-secret-key-change-in-production"
@@ -34,21 +34,21 @@ class Settings(BaseSettings):
     log_format: str = "json"
 
     # Redis (for rate limiting / caching)
-    redis_url: Optional[str] = None
+    redis_url: str | None = None
 
     # LLM / AI Chat Assistant (Legacy — OpenAI-compatible)
-    llm_api_url: Optional[str] = None
-    llm_api_key: Optional[str] = None
+    llm_api_url: str | None = None
+    llm_api_key: str | None = None
     llm_model: str = "gpt-3.5-turbo"
 
     # Gemini LLM (LangChain-based)
-    gemini_api_key: Optional[str] = None
+    gemini_api_key: str | None = None
     gemini_model: str = "gemini-1.5-flash-latest"
     gemini_temperature: float = 0.7
     gemini_max_tokens: int = 1024
 
     # Groq LLM (LangChain-based; the only LLM provider used by the app)
-    groq_api_key: Optional[str] = None
+    groq_api_key: str | None = None
     groq_model: str = "openai/gpt-oss-120b"
     groq_temperature: float = 0.7
     groq_max_tokens: int = 2048
@@ -61,10 +61,10 @@ class Settings(BaseSettings):
     rag_score_threshold: float = 0.7
 
     # SMTP (for email reminders)
-    smtp_host: Optional[str] = None
+    smtp_host: str | None = None
     smtp_port: int = 587
-    smtp_user: Optional[str] = None
-    smtp_password: Optional[str] = None
+    smtp_user: str | None = None
+    smtp_password: str | None = None
     smtp_from_email: str = "noreply@symptomscope.ai"
 
     @property

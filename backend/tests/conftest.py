@@ -10,20 +10,20 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 # Python/OpenSSL builds). All DB access in tests is mocked.
 os.environ.setdefault("MONGODB_URI", "mongodb://localhost:27017/test")
 
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timezone
 
-from main import app
 from auth.dependency import get_current_user
-
+from main import app
 
 # ── Test doctor data (availability as list[str]) ──────────────────────
 _MOCK_DOCTORS = [
-    {"name": "Dr. Sharma", "specialty": "General Physician", "location": "Ludhiana", "rating": 4.5, "distance_km": 2.3, "availability": ["Today"], "phone": "+91-161-XXXXXXX", "hospital": "Dayanand Medical College", "experience_years": 15, "createdAt": datetime.now(timezone.utc).isoformat()},
-    {"name": "Dr. Patel", "specialty": "Cardiologist", "location": "Amritsar", "rating": 4.7, "distance_km": 5.0, "availability": ["Today"], "phone": "+91-183-XXXXXXX", "hospital": "Apollo Amritsar", "experience_years": 18, "createdAt": datetime.now(timezone.utc).isoformat()},
-    {"name": "Dr. Mehta", "specialty": "Cardiologist", "location": "Ludhiana", "rating": 4.9, "distance_km": 2.0, "availability": ["Today"], "phone": "+91-161-XXXXXX4", "hospital": "Dayanand Medical College", "experience_years": 25, "createdAt": datetime.now(timezone.utc).isoformat()},
+    {"name": "Dr. Sharma", "specialty": "General Physician", "location": "Ludhiana", "rating": 4.5, "distance_km": 2.3, "availability": ["Today"], "phone": "+91-161-XXXXXXX", "hospital": "Dayanand Medical College", "experience_years": 15, "createdAt": datetime.now(UTC).isoformat()},
+    {"name": "Dr. Patel", "specialty": "Cardiologist", "location": "Amritsar", "rating": 4.7, "distance_km": 5.0, "availability": ["Today"], "phone": "+91-183-XXXXXXX", "hospital": "Apollo Amritsar", "experience_years": 18, "createdAt": datetime.now(UTC).isoformat()},
+    {"name": "Dr. Mehta", "specialty": "Cardiologist", "location": "Ludhiana", "rating": 4.9, "distance_km": 2.0, "availability": ["Today"], "phone": "+91-161-XXXXXX4", "hospital": "Dayanand Medical College", "experience_years": 25, "createdAt": datetime.now(UTC).isoformat()},
 ]
 
 _MOCK_SPECIALTIES = ["General Physician", "Cardiologist", "Neurologist"]
@@ -88,12 +88,14 @@ def _make_mock_collection(data: list[dict]) -> MagicMock:
 @pytest.fixture(autouse=True)
 def _mock_mongodb_lifespan():
     """Patch the lifespan's ensure_indexes to avoid Motor event loop issues."""
-    with patch("main.ensure_indexes", new_callable=AsyncMock):
-        with patch("services.rag_service.RAGService.has_documents", return_value=False):
-            with patch("services.rag_service.RAGService.initialize_knowledge_base", return_value=0):
-                with patch("services.reminder_service.scheduler.start", new_callable=AsyncMock):
-                    with patch("services.reminder_service.scheduler.stop", new_callable=AsyncMock):
-                        yield
+    with (
+        patch("main.ensure_indexes", new_callable=AsyncMock),
+        patch("services.rag_service.RAGService.has_documents", return_value=False),
+        patch("services.rag_service.RAGService.initialize_knowledge_base", return_value=0),
+        patch("services.reminder_service.scheduler.start", new_callable=AsyncMock),
+        patch("services.reminder_service.scheduler.stop", new_callable=AsyncMock),
+    ):
+        yield
 
 
 @pytest.fixture
@@ -113,11 +115,13 @@ def client():
     prediction_col.insert_one = AsyncMock(return_value=MagicMock(inserted_id="507f1f77bcf86cd799439011"))
     prediction_col.find = MagicMock(return_value=_make_mock_cursor([]))
 
-    with patch("repositories.doctor_repository._get_collection", return_value=doctor_col), \
-         patch("repositories.hospital_repository._get_collection", return_value=hospital_col), \
-         patch("repositories.prediction_repository._get_collection", return_value=prediction_col):
-        with TestClient(app) as test_client:
-            yield test_client
+    with (
+        patch("repositories.doctor_repository._get_collection", return_value=doctor_col),
+        patch("repositories.hospital_repository._get_collection", return_value=hospital_col),
+        patch("repositories.prediction_repository._get_collection", return_value=prediction_col),
+        TestClient(app) as test_client,
+    ):
+        yield test_client
 
     app.dependency_overrides.clear()
 

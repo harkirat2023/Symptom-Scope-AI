@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
-from services.report_service import ReportService
+from datetime import UTC, datetime
+
 from schemas.prediction_schema import PredictionRecord
+from services.report_service import ReportService
 
 
 def make_record(prediction="Flu", confidence=80.0, severity="Moderate"):
@@ -11,7 +12,7 @@ def make_record(prediction="Flu", confidence=80.0, severity="Moderate"):
         prediction=prediction,
         confidence=confidence,
         severity=severity,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 

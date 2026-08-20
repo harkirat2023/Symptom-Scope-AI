@@ -1,22 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel
-from typing import Any, Dict, List
-
-from schemas.recovery_schema import (
-    RecoveryPlanResponse,
-    RecoveryPlanListResponse,
-    RecoveryPlanRegenerateRequest,
-)
-from schemas.prediction_schema import PredictionRecord
-from services.llm_service import LLMService
-from repositories.recovery_repository import RecoveryPlanRepository
-from repositories.prediction_repository import PredictionRepository
-from auth.dependency import get_current_user
-from utils.rate_limit import limiter
-from bson.objectid import ObjectId
-from bson.errors import InvalidId
 import json
 import logging
+from typing import Any
+
+from bson.errors import InvalidId
+from bson.objectid import ObjectId
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
+
+from auth.dependency import get_current_user
+from repositories.prediction_repository import PredictionRepository
+from repositories.recovery_repository import RecoveryPlanRepository
+from schemas.prediction_schema import PredictionRecord
+from schemas.recovery_schema import (
+    RecoveryPlanListResponse,
+    RecoveryPlanRegenerateRequest,
+    RecoveryPlanResponse,
+)
+from services.llm_service import LLMService
+from utils.rate_limit import limiter
 
 logger = logging.getLogger("symptomscope.api.recovery")
 
@@ -27,7 +28,7 @@ class RecoveryPlanGenerateRequest(BaseModel):
     prediction_id: str
 
 
-def _prediction_context(pred: PredictionRecord) -> Dict[str, Any]:
+def _prediction_context(pred: PredictionRecord) -> dict[str, Any]:
     """Build the LLM context from a PredictionRecord."""
     return {
         "disease": pred.prediction or "unknown",
@@ -68,7 +69,7 @@ def _extract_json(text: str) -> dict:
     return json.loads(payload)
 
 
-def _build_prompt(context: Dict[str, Any]) -> str:
+def _build_prompt(context: dict[str, Any]) -> str:
     return f"""Generate a comprehensive, evidence-based, educational recovery plan for a patient predicted to have {context['disease']}.
 
 Patient Context:
@@ -110,7 +111,7 @@ Rules:
 - Always include medical disclaimers and emphasize this is educational guidance, not a diagnosis or treatment plan."""
 
 
-def _merge_plan_data(generated: dict, context: Dict[str, Any]) -> dict:
+def _merge_plan_data(generated: dict, context: dict[str, Any]) -> dict:
     """Merge the LLM output with the structured fallback so every section exists."""
     defaults = _get_default_plan(context)
     merged = dict(defaults)
@@ -287,7 +288,7 @@ async def regenerate_recovery_plan(
     return _format_plan_response(updated_plan)
 
 
-def _get_default_plan(context: Dict[str, Any]) -> dict:
+def _get_default_plan(context: dict[str, Any]) -> dict:
     """Fallback plan if LLM fails. Educational, conservative, never fabricates facts."""
     disease = context.get("disease", "the predicted condition")
     return {

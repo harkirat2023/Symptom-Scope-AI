@@ -8,7 +8,7 @@ Covers all 24 diseases from the Symptom2Disease Kaggle dataset plus
 Severe Respiratory Distress) from the training augmentation set.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass

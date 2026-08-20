@@ -1,11 +1,12 @@
-import smtplib
 import hashlib
 import hmac
-import time
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from utils.settings import settings
 import logging
+import smtplib
+import time
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+from utils.settings import settings
 
 logger = logging.getLogger("symptomscope")
 

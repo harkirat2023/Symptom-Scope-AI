@@ -1,5 +1,6 @@
-from utils.settings import settings
 import logging
+
+from utils.settings import settings
 
 logger = logging.getLogger("symptomscope.env")
 

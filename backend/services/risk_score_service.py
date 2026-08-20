@@ -1,5 +1,3 @@
-import numpy as np
-from datetime import datetime, timezone, timedelta
 from schemas.risk_score_schema import RiskFactorBreakdown
 
 
@@ -234,8 +232,10 @@ class RiskScoreService:
 
         if not latest:
             return [
-                "Complete your health profile and use the Symptom Checker "
-                "to receive personalized risk reduction tips."
+                (
+                    "Complete your health profile and use the Symptom Checker "
+                    "to receive personalized risk reduction tips."
+                )
             ]
 
         breakdown_data = latest.get("breakdown", {})

@@ -1,4 +1,5 @@
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import numpy as np
 
 
@@ -14,7 +15,8 @@ def test_predict_symptoms(client, mock_db):
     with patch("services.prediction_service.PredictionService.predict") as mock_predict, \
          patch("services.prediction_service.PredictionService.get_confidence_info") as mock_conf_info, \
          patch("services.prediction_service.PredictionService.generate_explanation_summary") as mock_explain, \
-         patch("services.feature_engineering.FeatureEngineeringService.encode_symptoms") as mock_encode:
+         patch("services.feature_engineering.FeatureEngineeringService.encode_symptoms") as mock_encode, \
+         patch("services.explainability_service.ExplainabilityService.build_contributing_symptoms") as mock_shap:
 
         mock_encode.return_value = np.array([1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
@@ -32,6 +34,13 @@ def test_predict_symptoms(client, mock_db):
             "description": "High confidence",
         }
         mock_explain.return_value = "Explanation summary"
+        mock_shap.return_value = {
+            "base_value": 0.1234,
+            "top_contributing_symptoms": [
+                {"symptom": "fever", "importance": 0.4, "shap_value": 0.1, "relative_contribution_pct": 57.14},
+                {"symptom": "dry_cough", "importance": 0.3, "shap_value": 0.05, "relative_contribution_pct": 28.57},
+            ],
+        }
 
         mock_db.insert_one.return_value = MagicMock(
             inserted_id="507f1f77bcf86cd799439011"

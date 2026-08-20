@@ -1,7 +1,8 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from services.agent_service import AgentService, WRITE_TOOLS
+import pytest
+
+from services.agent_service import WRITE_TOOLS, AgentService
 
 
 class TestParsePlan:
@@ -22,7 +23,7 @@ class TestParsePlan:
         assert plan["reply"] == "y"
 
     def test_parse_invalid_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             self.agent._parse_plan("no json")
 
 
@@ -70,7 +71,7 @@ class TestPlanNormalization:
             "createdAt": "2026-01-01T00:00:00Z",
             "expiresAt": "2026-01-02T00:00:00Z",
         }
-        reply, pending = await self.agent.run_turn("u1", "s1", "remind me", [], None)
+        _, pending = await self.agent.run_turn("u1", "s1", "remind me", [], None)
         assert pending is not None
         assert pending.id == "act123"
         assert pending.tool == "create_reminder"
@@ -111,7 +112,7 @@ class TestPlanNormalization:
         }
         mock_execute.return_value = {"profile": {"email": "a@b.com"}}
         mock_finalize.return_value = "Profile updated."
-        reply, pending = await self.agent.confirm_action("u1", "act1", "approve")
+        reply, _ = await self.agent.confirm_action("u1", "act1", "approve")
         assert reply == "Profile updated."
         mock_execute.assert_awaited_once_with("u1", "update_profile", {"email": "a@b.com"})
 
@@ -127,7 +128,7 @@ class TestPlanNormalization:
             "expiresAt": "2099-01-01T00:00:00Z",
         }
         with patch.object(AgentService, "_execute_tool", new_callable=AsyncMock) as mock_exec:
-            reply, pending = await self.agent.confirm_action("u1", "act1", "decline")
+            reply, _ = await self.agent.confirm_action("u1", "act1", "decline")
         mock_exec.assert_not_awaited()
         assert "won't" in reply.lower()
 

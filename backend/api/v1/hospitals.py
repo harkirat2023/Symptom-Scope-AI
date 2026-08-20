@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Query, Request
+
+from auth.dependency import get_current_user
 from schemas.hospital_schema import HospitalResponse, HospitalSearchResponse
 from services.hospital_service import HospitalService
-from auth.dependency import get_current_user
 from utils.rate_limit import limiter
 
 router = APIRouter()

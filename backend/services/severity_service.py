@@ -1,8 +1,8 @@
 from services.disease_registry import (
     DISEASE_REGISTRY,
     SEVERITY_ORDER,
-    get_severity,
     get_escalation,
+    get_severity,
 )
 
 SEVERITY_LEVELS = ("Mild", "Moderate", "Severe")
@@ -30,9 +30,12 @@ class SeverityService:
     def classify(self, disease: str, confidence: float = 0.0) -> str:
         base = get_severity(disease)
         escalation_severity, escalation_threshold = get_escalation(disease)
-        if escalation_severity is not None and escalation_threshold is not None:
-            if confidence >= escalation_threshold:
-                return escalation_severity
+        if (
+            escalation_severity is not None
+            and escalation_threshold is not None
+            and confidence >= escalation_threshold
+        ):
+            return escalation_severity
         if base not in SEVERITY_LEVELS:
             return "Moderate"
         return base

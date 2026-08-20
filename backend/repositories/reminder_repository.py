@@ -1,4 +1,5 @@
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 from utils.database import get_database
 
 _COLLECTION_REMINDERS = None
@@ -21,7 +22,7 @@ def _get_logs_collection():
 
 class ReminderRepository:
     async def create(self, user_id: str, data: dict) -> dict:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         next_due = self._compute_next_due(data.get("start_time", "08:00"))
         reminder = {
             **data,
@@ -60,7 +61,7 @@ class ReminderRepository:
 
     async def update(self, reminder_id: str, data: dict) -> dict | None:
         from bson.objectid import ObjectId
-        data["updatedAt"] = datetime.now(timezone.utc).isoformat()
+        data["updatedAt"] = datetime.now(UTC).isoformat()
         if "start_time" in data:
             data["nextDueAt"] = self._compute_next_due(data["start_time"])
         await _get_reminders_collection().update_one(
@@ -79,7 +80,7 @@ class ReminderRepository:
     async def log_status(
         self, reminder_id: str, user_id: str, status: str, note: str | None = None
     ) -> dict:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         log_entry = {
             "reminderId": reminder_id,
             "userId": user_id,
@@ -100,7 +101,7 @@ class ReminderRepository:
     async def find_upcoming(
         self, user_id: str
     ) -> dict | None:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         cursor = (
             _get_reminders_collection()
             .find(
@@ -117,7 +118,7 @@ class ReminderRepository:
         return docs[0] if docs else None
 
     async def find_due_reminders(self) -> list[dict]:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         cursor = (
             _get_reminders_collection()
             .find(
@@ -134,13 +135,13 @@ class ReminderRepository:
         from bson.objectid import ObjectId
         result = await _get_reminders_collection().update_one(
             {"_id": ObjectId(reminder_id)},
-            {"$set": {"nextDueAt": next_due, "updatedAt": datetime.now(timezone.utc).isoformat()}},
+            {"$set": {"nextDueAt": next_due, "updatedAt": datetime.now(UTC).isoformat()}},
         )
         return result.modified_count > 0
 
     @staticmethod
     def _compute_next_due(start_time: str) -> str:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         parts = start_time.split(":")
         hour, minute = int(parts[0]), int(parts[1])
         due = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
@@ -150,4 +151,4 @@ class ReminderRepository:
 
     @staticmethod
     def _compute_next_due_from_now() -> str:
-        return (datetime.now(timezone.utc) + timedelta(hours=8)).isoformat()
+        return (datetime.now(UTC) + timedelta(hours=8)).isoformat()

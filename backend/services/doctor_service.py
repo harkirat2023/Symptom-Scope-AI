@@ -1,8 +1,8 @@
 """Doctor service — now backed by MongoDB repository."""
 
-from services.search_service import compute_relevance
-from services.disease_registry import get_specialist
 from repositories.doctor_repository import DoctorRepository
+from services.disease_registry import get_specialist
+from services.search_service import compute_relevance
 
 AVAILABILITY_ORDER = {"Today": 0, "Tomorrow": 1, "In 2 days": 2}
 

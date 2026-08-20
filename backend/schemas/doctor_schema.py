@@ -1,9 +1,9 @@
+
 from pydantic import BaseModel
-from typing import Optional
 
 
 class DoctorResponse(BaseModel):
-    id: Optional[str] = None
+    id: str | None = None
     name: str
     specialty: str
     location: str

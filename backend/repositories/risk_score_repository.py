@@ -1,4 +1,5 @@
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 from utils.database import get_database
 
 _COLLECTION_SCORES = None
@@ -31,7 +32,7 @@ class RiskScoreRepository:
         breakdown: dict,
         prediction_id: str | None = None,
     ) -> dict:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         doc = {
             "userId": user_id,
             "score": score,
@@ -58,7 +59,7 @@ class RiskScoreRepository:
         self, user_id: str, time_range: str = "6m", limit: int = 50
     ) -> list[dict]:
         days = RANGE_DAYS.get(time_range, 180)
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
         cursor = (
             _get_scores_collection()
             .find(
@@ -75,7 +76,7 @@ class RiskScoreRepository:
     async def upsert_profile(
         self, user_id: str, data: dict
     ) -> dict:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         data["updatedAt"] = now
         await _get_profiles_collection().update_one(
             {"userId": user_id},

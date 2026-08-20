@@ -1,7 +1,7 @@
 """MongoDB repository for doctor data."""
 
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
+
 from utils.database import get_database
 
 _COLLECTION = None
@@ -46,16 +46,16 @@ async def seed_doctors():
         {"name": "Dr. Arora", "specialty": "General Physician", "location": "Amritsar", "rating": 4.1, "distance_km": 1.2, "availability": "Today", "phone": "+91-183-XXXXXX3", "hospital": "Surya Hospital", "experience_years": 7},
     ]
     for doc in doctors:
-        doc["createdAt"] = datetime.now(timezone.utc).isoformat()
+        doc["createdAt"] = datetime.now(UTC).isoformat()
     await col.insert_many(doctors)
 
 
 class DoctorRepository:
     async def find_all(
         self,
-        specialty: Optional[str] = None,
-        location: Optional[str] = None,
-        query: Optional[str] = None,
+        specialty: str | None = None,
+        location: str | None = None,
+        query: str | None = None,
         limit: int = 50,
     ) -> list[dict]:
         col = _get_collection()

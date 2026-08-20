@@ -1,9 +1,11 @@
-import time
 import logging
-import jwt
+import time
+
 import httpx
+import jwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from utils.settings import settings
 
 logger = logging.getLogger("symptomscope.auth")

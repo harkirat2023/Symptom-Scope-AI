@@ -1,5 +1,6 @@
 import numpy as np
-from services.feature_engineering import FeatureEngineeringService, SYMPTOM_LIST
+
+from services.feature_engineering import SYMPTOM_LIST, FeatureEngineeringService
 
 
 class TestFeatureEngineeringService:

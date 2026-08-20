@@ -12,10 +12,10 @@ Dataset: niyarrbarman/symptom2disease
 Usage:
     python -m ml.data.kaggle_pipeline
 """
-import kagglehub
 import logging
-import re
 from pathlib import Path
+
+import kagglehub
 import pandas as pd
 from kagglehub import KaggleDatasetAdapter
 

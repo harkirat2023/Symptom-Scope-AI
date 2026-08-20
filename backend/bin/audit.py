@@ -19,7 +19,6 @@ Usage:
 
 import argparse
 import importlib
-import inspect
 import logging
 import sys
 from pathlib import Path
@@ -214,18 +213,18 @@ def generate_report(
 ) -> str:
     lines = []
     lines.append("# SymptomScope AI — Audit Report")
-    lines.append(f"\nGenerated: automated\n")
+    lines.append("\nGenerated: automated\n")
     lines.append("---\n")
 
     # Module imports
     lines.append("## Module Imports\n")
     passed = sum(1 for r in module_results if r["status"] == "OK")
     total = len(module_results)
-    lines.append(f"| Status | Count |")
-    lines.append(f"|--------|-------|")
+    lines.append("| Status | Count |")
+    lines.append("|--------|-------|")
     lines.append(f"| Passed | {passed}/{total} |")
     lines.append(f"| Failed | {total - passed}/{total} |")
-    lines.append(f"\n**Failed modules:**")
+    lines.append("\n**Failed modules:**")
     for r in module_results:
         if r["status"] != "OK":
             lines.append(f"- `{r['module']}`: {r.get('error', 'unknown')}")
@@ -233,8 +232,8 @@ def generate_report(
 
     # ML artifacts
     lines.append("## ML Artifacts\n")
-    lines.append(f"| Artifact | Exists | Size |")
-    lines.append(f"|----------|--------|------|")
+    lines.append("| Artifact | Exists | Size |")
+    lines.append("|----------|--------|------|")
     for r in ml_results:
         lines.append(f"| {r['artifact']} | {'✅' if r['exists'] else '❌'} | {r['size_kb']} KB |")
     lines.append("")
@@ -261,8 +260,8 @@ def generate_report(
     # API endpoints
     if api_results:
         lines.append("## API Endpoints\n")
-        lines.append(f"| Feature | Path | Status | Code | Details |")
-        lines.append(f"|---------|------|--------|------|---------|")
+        lines.append("| Feature | Path | Status | Code | Details |")
+        lines.append("|---------|------|--------|------|---------|")
         for r in api_results:
             emoji = "✅" if r["status"] == "OK" else "⚠️" if r["status"] == "WARN" else "❌"
             code = str(r["status_code"]) if r["status_code"] else "N/A"

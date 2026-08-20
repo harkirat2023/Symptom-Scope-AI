@@ -1,4 +1,4 @@
-from services.search_service import score_and_sort, filter_by_field
+from services.search_service import filter_by_field, score_and_sort
 
 SYMPTOM_CATEGORIES: dict[str, str] = {
     "fever": "General",

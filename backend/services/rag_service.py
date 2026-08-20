@@ -7,17 +7,17 @@ for grounded LLM responses.
 """
 
 from pathlib import Path
-from typing import Optional, List
 
 from langchain_chroma import Chroma
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
-from utils.settings import settings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # Use a lightweight TF-IDF based adapter backed by scikit-learn for embeddings.
 # This keeps the RAG pipeline free and avoids heavyweight dependencies like
 # PyTorch/transformers while remaining compatible with Chroma's embedding API.
 from sklearn.feature_extraction.text import TfidfVectorizer
+
+from utils.settings import settings
 
 
 class TFIDFEmbeddingAdapter:
@@ -36,7 +36,7 @@ class TFIDFEmbeddingAdapter:
         self._vectorizer = TfidfVectorizer()
         self._fitted = False
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
         if not self._fitted:
@@ -46,7 +46,7 @@ class TFIDFEmbeddingAdapter:
             mat = self._vectorizer.transform(texts)
         return mat.toarray().tolist()
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> list[float]:
         if not self._fitted:
             # If not yet fitted, fit with the single query to avoid crash; results
             # will be sparse until full corpus is added.
@@ -57,7 +57,7 @@ class TFIDFEmbeddingAdapter:
         mat = self._vectorizer.transform([text])
         return mat.toarray()[0].tolist()
 
-    def __call__(self, texts: List[str]) -> List[List[float]]:
+    def __call__(self, texts: list[str]) -> list[list[float]]:
         return self.embed_documents(texts)
 
 KNOWLEDGE_DIR = Path(__file__).parent.parent / "ml" / "rag" / "knowledge"

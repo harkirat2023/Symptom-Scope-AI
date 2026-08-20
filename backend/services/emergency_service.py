@@ -1,4 +1,4 @@
-from services.disease_registry import is_emergency_risk, get_escalation, DISEASE_REGISTRY
+from services.disease_registry import DISEASE_REGISTRY, get_escalation, is_emergency_risk
 
 CRITICAL_CONFIDENCE_THRESHOLD = 90
 MODERATE_ESCALATION_THRESHOLD = 95

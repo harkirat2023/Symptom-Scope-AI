@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from utils.database import get_database
 
 _COLLECTION_SESSIONS = None
@@ -23,7 +24,7 @@ class ChatRepository:
     async def create_session(
         self, user_id: str, prediction_context: dict | None = None
     ) -> dict:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         session = {
             "userId": user_id,
             "startedAt": now,
@@ -62,7 +63,7 @@ class ChatRepository:
     async def add_message(
         self, session_id: str, role: str, content: str
     ) -> dict:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         message = {
             "sessionId": session_id,
             "role": role,
@@ -81,7 +82,6 @@ class ChatRepository:
     async def get_session_messages(
         self, session_id: str, limit: int = 50
     ) -> list[dict]:
-        from bson.objectid import ObjectId
 
         cursor = (
             _get_messages_collection()
@@ -93,7 +93,7 @@ class ChatRepository:
 
     async def deactivate_stale_sessions(self, user_id: str, timeout_minutes: int = 30):
         from datetime import timedelta
-        cutoff = datetime.now(timezone.utc) - timedelta(minutes=timeout_minutes)
+        cutoff = datetime.now(UTC) - timedelta(minutes=timeout_minutes)
         cutoff_iso = cutoff.isoformat()
         await _get_sessions_collection().update_many(
             {"userId": user_id, "isActive": True, "lastActivityAt": {"$lt": cutoff_iso}},

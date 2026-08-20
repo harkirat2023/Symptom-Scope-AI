@@ -1,4 +1,5 @@
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 from schemas.prediction_schema import PredictionRecord
 from utils.database import get_database
 
@@ -39,7 +40,7 @@ class PredictionRepository:
             "existingConditions": existing_conditions or [],
             "symptomDuration": symptom_duration,
             "painLevel": pain_level,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         collection = _get_collection()
         result = await collection.insert_one(record)
@@ -87,7 +88,7 @@ class PredictionRepository:
         collection = _get_collection()
         query: dict = {"userId": user_id}
         if time_range and time_range in RANGE_DAYS:
-            cutoff = datetime.now(timezone.utc) - timedelta(days=RANGE_DAYS[time_range])
+            cutoff = datetime.now(UTC) - timedelta(days=RANGE_DAYS[time_range])
             query["timestamp"] = {"$gte": cutoff.isoformat()}
         cursor = collection.find(
             query,

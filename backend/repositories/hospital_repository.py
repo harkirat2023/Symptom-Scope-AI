@@ -1,7 +1,7 @@
 """MongoDB repository for hospital data."""
 
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
+
 from utils.database import get_database
 
 _COLLECTION = None
@@ -42,15 +42,15 @@ async def seed_hospitals():
         {"name": "Deep Hospital", "location": "Ludhiana", "specialties": ["General Medicine", "Pediatrics", "Emergency"], "rating": 4.0, "distance_km": 1.8, "phone": "+91-161-5000666", "has_emergency": True, "has_ambulance": False, "bed_count": 120, "address": "Model Gram, Ludhiana"},
     ]
     for doc in hospitals:
-        doc["createdAt"] = datetime.now(timezone.utc).isoformat()
+        doc["createdAt"] = datetime.now(UTC).isoformat()
     await col.insert_many(hospitals)
 
 
 class HospitalRepository:
     async def find_all(
         self,
-        location: Optional[str] = None,
-        specialty: Optional[str] = None,
+        location: str | None = None,
+        specialty: str | None = None,
         emergency_only: bool = False,
         limit: int = 20,
     ) -> list[dict]:

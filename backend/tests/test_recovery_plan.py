@@ -1,11 +1,12 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from api.v1.recovery import (
     _extract_json,
+    _get_default_plan,
     _merge_plan_data,
     _prediction_context,
-    _get_default_plan,
 )
 from repositories.recovery_repository import RecoveryPlanRepository
 from schemas.prediction_schema import PredictionRecord
@@ -70,7 +71,7 @@ class TestMergePlanData:
         merged = _merge_plan_data(generated, context)
         assert merged["what_it_means"] == "custom explanation"
         # Every section from the default plan is present
-        for key in _get_default_plan(context).keys():
+        for key in _get_default_plan(context):
             assert key in merged
 
     def test_empty_values_not_used(self):

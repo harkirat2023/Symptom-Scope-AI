@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
-from schemas.report_schema import ReportResponse
+from datetime import UTC, datetime
+
 from schemas.prediction_schema import PredictionRecord
+from schemas.report_schema import ReportResponse
 
 
 class ReportService:
@@ -12,7 +13,7 @@ class ReportService:
     ) -> ReportResponse:
         severity_distribution = self._get_severity_distribution(predictions)
         return ReportResponse(
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=datetime.now(UTC).isoformat(),
             total_predictions=len(predictions),
             most_common_disease=self._get_most_common(predictions),
             avg_confidence=self._get_avg_confidence(predictions),

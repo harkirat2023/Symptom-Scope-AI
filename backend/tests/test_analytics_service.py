@@ -1,6 +1,7 @@
-from datetime import datetime, timezone, timedelta
-from services.analytics_service import AnalyticsService
+from datetime import UTC, datetime, timedelta
+
 from schemas.prediction_schema import PredictionRecord
+from services.analytics_service import AnalyticsService
 
 
 def make_record(
@@ -10,7 +11,7 @@ def make_record(
     symptoms=None,
     days_ago=0,
 ):
-    ts = (datetime.now(timezone.utc) - timedelta(days=days_ago)).isoformat()
+    ts = (datetime.now(UTC) - timedelta(days=days_ago)).isoformat()
     return PredictionRecord(
         _id=f"id-{days_ago}",
         user_id="user-1",

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Query, Request
-from schemas.symptom_schema import SymptomSearchResponse, SymptomResult
-from services.symptom_search_service import SymptomSearchService
+
 from auth.dependency import get_current_user
+from schemas.symptom_schema import SymptomResult, SymptomSearchResponse
+from services.symptom_search_service import SymptomSearchService
 from utils.rate_limit import limiter
 
 router = APIRouter()

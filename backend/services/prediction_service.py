@@ -1,13 +1,15 @@
-import numpy as np
 from dataclasses import dataclass
+
+import numpy as np
+
 from services.disease_registry import DISEASE_REGISTRY
 from services.model_registry import (
     get_decision_tree,
-    get_random_forest,
-    get_naive_bayes,
     get_label_encoder,
-    get_symptom_columns,
+    get_naive_bayes,
+    get_random_forest,
     get_rf_feature_importances,
+    get_symptom_columns,
 )
 
 CONFIDENCE_LABELS: list[tuple[float, float, str, str]] = [
@@ -103,8 +105,10 @@ class PredictionService:
         )
 
         parts = [
-            f"Based on your reported symptoms ({symptom_text}), "
-            f"the most likely diagnosis is {disease}.",
+            (
+                f"Based on your reported symptoms ({symptom_text}), "
+                f"the most likely diagnosis is {disease}."
+            ),
         ]
 
         if disease_info:

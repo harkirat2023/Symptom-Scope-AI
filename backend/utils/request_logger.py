@@ -1,6 +1,7 @@
+import logging
 import re
 import time
-import logging
+
 from fastapi import Request, Response
 
 logger = logging.getLogger("symptomscope.request")

@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
 from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ReminderCreate(BaseModel):

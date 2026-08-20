@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+
 from schemas.prediction_schema import PredictionRecord
 
 

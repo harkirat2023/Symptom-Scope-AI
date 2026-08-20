@@ -1,4 +1,4 @@
-from services.disease_registry import get_precautions, FALLBACK_PRECAUTIONS_BY_SEVERITY
+from services.disease_registry import FALLBACK_PRECAUTIONS_BY_SEVERITY, get_precautions
 
 
 class PrecautionService:

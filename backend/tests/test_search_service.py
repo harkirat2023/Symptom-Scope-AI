@@ -1,4 +1,4 @@
-from services.search_service import compute_relevance, score_and_sort, filter_by_field
+from services.search_service import compute_relevance, filter_by_field, score_and_sort
 
 
 class TestComputeRelevance:

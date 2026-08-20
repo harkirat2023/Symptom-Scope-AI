@@ -1,9 +1,10 @@
 """Shared singleton for loading and caching ML model artifacts."""
 
-import joblib
-import numpy as np
 from pathlib import Path
 from threading import Lock
+
+import joblib
+import numpy as np
 
 _models_path = Path(__file__).parent.parent / "ml" / "models"
 

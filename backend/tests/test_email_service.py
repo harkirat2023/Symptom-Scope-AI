@@ -1,4 +1,3 @@
-import time
 
 from services.email_service import EmailService
 
@@ -9,7 +8,6 @@ class TestEmailSigning:
 
     def test_signature_round_trip(self):
         link = self.svc._create_signed_action_link("rem1", "taken", "user1", 48)
-        import urllib.parse
         from urllib.parse import parse_qs, urlparse
 
         qs = parse_qs(urlparse(link).query)

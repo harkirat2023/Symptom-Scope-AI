@@ -17,10 +17,11 @@ Fallback chain:
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+
 from utils.settings import settings
 
 PROMPTS_DIR = Path(__file__).parent.parent / "ml" / "prompts"
@@ -84,8 +85,8 @@ class LLMService:
         self,
         system_prompt: str,
         user_message: str,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         json_mode: bool = False,
     ) -> str:
         """Invoke via LangChain + Groq."""
@@ -109,8 +110,8 @@ class LLMService:
         self,
         system_prompt: str,
         user_message: str,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
         json_mode: bool = False,
     ) -> str:
         """
@@ -126,7 +127,7 @@ class LLMService:
                 return await self._invoke_groq_langchain(
                     system_prompt, user_message, temperature, max_tokens, json_mode
                 )
-            except Exception as e:
+            except Exception:
                 _logger.exception("LangChain + Groq invocation failed")
                 raise
 

@@ -17,11 +17,9 @@ Architecture (per user message):
 
 import json
 import logging
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
 
 from schemas.chat_schema import PendingActionResponse
-from utils.settings import settings
 
 _logger = logging.getLogger("symptomscope.agent")
 
@@ -291,15 +289,15 @@ class AgentService:
         }
 
     async def _tool_generate_recovery_plan(self, user_id: str, args: dict) -> dict:
+        from api.v1.recovery import (
+            _build_prompt,
+            _extract_json,
+            _get_default_plan,
+            _merge_plan_data,
+            _prediction_context,
+        )
         from repositories.prediction_repository import PredictionRepository
         from repositories.recovery_repository import RecoveryPlanRepository
-        from api.v1.recovery import (
-            _prediction_context,
-            _build_prompt,
-            _merge_plan_data,
-            _get_default_plan,
-            _extract_json,
-        )
 
         prediction_id = args.get("prediction_id")
         pred = None
@@ -314,7 +312,7 @@ class AgentService:
         try:
             result = await self.llm.invoke(_build_prompt(context), "", json_mode=True)
             plan_data = _merge_plan_data(_extract_json(result), context)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             _logger.warning("Agent recovery plan generation failed (%s); using fallback", e)
             plan_data = _get_default_plan(context)
 
@@ -332,7 +330,7 @@ class AgentService:
         try:
             from api.v1.recovery import _notify_recovery_plan_email
             await _notify_recovery_plan_email(user_id, pred.prediction)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             _logger.warning("Recovery plan email skipped: %s", e)
 
         return {
@@ -359,8 +357,8 @@ class AgentService:
         }
 
     async def _tool_create_reminder(self, user_id: str, args: dict) -> dict:
-        from schemas.reminder_schema import ReminderCreate
         from repositories.reminder_repository import ReminderRepository
+        from schemas.reminder_schema import ReminderCreate
 
         validated = ReminderCreate(**args)
         reminder = await ReminderRepository().create(user_id, validated.model_dump())
@@ -373,8 +371,8 @@ class AgentService:
         }
 
     async def _tool_update_reminder(self, user_id: str, args: dict) -> dict:
-        from schemas.reminder_schema import ReminderUpdate
         from repositories.reminder_repository import ReminderRepository
+        from schemas.reminder_schema import ReminderUpdate
 
         reminder_id = args.get("reminder_id")
         if not reminder_id:
@@ -432,7 +430,7 @@ class AgentService:
         rag = RAGService()
         try:
             answer = await rag.answer_with_rag(query, self.llm)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             _logger.warning("RAG ask failed: %s", e)
             answer = await self.llm.answer_medical_question(question=query)
         return {"query": query, "answer": answer}
@@ -445,8 +443,7 @@ class AgentService:
         text = raw.strip()
         if text.startswith("```"):
             text = text.strip("`")
-            if text.startswith("json"):
-                text = text[4:]
+            text = text.removeprefix("json")
         start, end = text.find("{"), text.rfind("}")
         if start == -1 or end == -1:
             raise ValueError("No JSON object in agent plan")
@@ -495,7 +492,7 @@ class AgentService:
                 prompt, "", temperature=0.5, max_tokens=400
             )
             return reply.strip()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             _logger.warning("Finalize failed: %s", e)
             return f"I've completed that for you. Here is what happened:\n\n{json.dumps(result, default=str, indent=2)}"
 
@@ -510,7 +507,7 @@ class AgentService:
         message: str,
         history: list[dict],
         session_prediction_context: dict | None = None,
-    ) -> tuple[str, Optional[PendingActionResponse]]:
+    ) -> tuple[str, PendingActionResponse | None]:
         context = await self._build_context(user_id, session_prediction_context)
         history_txt = "\n".join(
             f"{m.get('role')}: {m.get('content')}" for m in history[-8:]
@@ -542,11 +539,13 @@ class AgentService:
         # Read-only tool — execute and finalize
         try:
             result = await self._execute_tool(user_id, plan["tool_name"], plan["args"])
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             _logger.warning("Read tool %s failed: %s", plan["tool_name"], e)
             return (
-                f"I couldn't complete that right now ({e}). "
-                "Please try again or consult a healthcare professional.",
+                (
+                    f"I couldn't complete that right now ({e}). "
+                    "Please try again or consult a healthcare professional."
+                ),
                 None,
             )
         tool_summary = f"{plan['tool_name']}({json.dumps(plan['args'], default=str)})"
@@ -555,7 +554,7 @@ class AgentService:
 
     async def confirm_action(
         self, user_id: str, pending_action_id: str, decision: str
-    ) -> tuple[str, Optional[PendingActionResponse]]:
+    ) -> tuple[str, PendingActionResponse | None]:
         from repositories.agent_repository import PendingActionRepository
 
         repo = PendingActionRepository()
@@ -566,7 +565,7 @@ class AgentService:
             raise ValueError("Action not found")
         if action.get("status") != "pending":
             raise ValueError("This action has already been handled")
-        if action.get("expiresAt") and action.get("expiresAt") < datetime.now(timezone.utc).isoformat():
+        if action.get("expiresAt") and action.get("expiresAt") < datetime.now(UTC).isoformat():
             await repo.mark_resolved(pending_action_id, "expired")
             raise ValueError("This action has expired. Please ask again.")
 
@@ -581,7 +580,7 @@ class AgentService:
         args = action.get("args") or {}
         try:
             result = await self._execute_tool(user_id, tool, args)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             _logger.warning("Confirmed tool %s failed: %s", tool, e)
             await repo.mark_resolved(pending_action_id, "failed", error=str(e))
             return (

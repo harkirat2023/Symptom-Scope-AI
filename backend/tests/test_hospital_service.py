@@ -1,7 +1,8 @@
 import pytest
-from services.hospital_service import HospitalService
-import utils.database as db_mod
+
 import repositories.hospital_repository as hr_mod
+import utils.database as db_mod
+from services.hospital_service import HospitalService
 
 
 def _reset_db():

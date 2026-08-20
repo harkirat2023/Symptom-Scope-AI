@@ -1,4 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+
 from utils.settings import settings
 
 _client: AsyncIOMotorClient | None = None
@@ -70,8 +71,10 @@ async def ensure_indexes():
     await pending_actions.create_index([("userId", 1), ("status", 1)])
     await pending_actions.create_index("expiresAt")
 
-    from repositories.doctor_repository import ensure_indexes as doctor_indexes, seed_doctors
-    from repositories.hospital_repository import ensure_indexes as hospital_indexes, seed_hospitals
+    from repositories.doctor_repository import ensure_indexes as doctor_indexes
+    from repositories.doctor_repository import seed_doctors
+    from repositories.hospital_repository import ensure_indexes as hospital_indexes
+    from repositories.hospital_repository import seed_hospitals
     await doctor_indexes()
     await hospital_indexes()
     await seed_doctors()

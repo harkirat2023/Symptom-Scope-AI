@@ -1,7 +1,8 @@
 import pytest
-from services.doctor_service import DoctorService
-import utils.database as db_mod
+
 import repositories.doctor_repository as dr_mod
+import utils.database as db_mod
+from services.doctor_service import DoctorService
 
 
 def _reset_db():

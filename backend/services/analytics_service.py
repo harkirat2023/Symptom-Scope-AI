@@ -1,9 +1,8 @@
-from datetime import datetime, timezone, timedelta
 from collections import Counter, defaultdict
-from schemas.prediction_schema import PredictionRecord
+from datetime import UTC, datetime, timedelta
 from threading import Lock
-import time
-import math
+
+from schemas.prediction_schema import PredictionRecord
 
 RANGE_MAP = {
     "1m": 30,
@@ -34,7 +33,7 @@ class AnalyticsService:
             return self._empty_response()
 
         days = RANGE_MAP.get(time_range, 180)
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
         filtered = [p for p in predictions if self._parse_ts(p.timestamp) >= cutoff]
         if not filtered:
             filtered = predictions[-5:] if predictions else []
@@ -524,4 +523,4 @@ class AnalyticsService:
         try:
             return datetime.fromisoformat(timestamp)
         except (ValueError, TypeError):
-            return datetime.min.replace(tzinfo=timezone.utc)
+            return datetime.min.replace(tzinfo=UTC)

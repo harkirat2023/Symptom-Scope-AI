@@ -106,8 +106,8 @@ class ChatService:
         disease: str = "",
         confidence: float = 0,
         severity: str = "",
-        symptoms: list[str] = None,
-        precautions: list[str] = None,
+        symptoms: list[str] | None = None,
+        precautions: list[str] | None = None,
     ) -> dict:
         return {
             "disease": disease,

@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
+
 from auth.dependency import get_current_user
 from repositories.prediction_repository import PredictionRepository
 from repositories.recovery_repository import RecoveryPlanRepository
@@ -97,7 +98,7 @@ async def export_pdf(
             )
     except ImportError as e:
         raise HTTPException(status_code=500, detail=str(e))
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to generate PDF report")
 
     return Response(

@@ -6,10 +6,10 @@ from pydantic import BaseModel
 from auth.dependency import get_current_user
 from repositories.chat_repository import ChatRepository
 from schemas.chat_schema import (
-    ChatSessionCreate,
-    ChatSessionResponse,
-    ChatSessionListResponse,
     ChatMessageResponse,
+    ChatSessionCreate,
+    ChatSessionListResponse,
+    ChatSessionResponse,
     ConfirmActionRequest,
     MessageSend,
 )
@@ -151,7 +151,7 @@ async def send_message(
             history,
             session_prediction_context=session.get("predictionContext"),
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         _logger.warning("Agent message processing failed: %s", e)
         response = (
             "I'm sorry, I couldn't process that request right now. "
@@ -188,7 +188,7 @@ async def confirm_action(
         from repositories.agent_repository import PendingActionRepository
 
         action = await PendingActionRepository().find_by_id(pending_action_id)
-    except Exception:  # noqa: BLE001
+    except Exception:
         action = None
     if not action:
         raise HTTPException(status_code=404, detail="Action not found")
@@ -208,7 +208,7 @@ async def confirm_action(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         _logger.warning("Confirm action failed: %s", e)
         raise HTTPException(status_code=500, detail="Could not process your decision")
 
@@ -310,7 +310,7 @@ async def ask_medical_question(
         rag = RAGService()
         answer = await rag.answer_with_rag(input_data.question, llm_service)
         return {"answer": answer, "rag_source": rag.has_documents()}
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         _logger.warning("RAG ask failed: %s", e)
         result = await llm_service.answer_medical_question(question=input_data.question)
         return {"answer": result, "rag_source": False}

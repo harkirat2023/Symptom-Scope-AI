@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from schemas.report_schema import ReportResponse
-from services.report_service import ReportService
+
+from auth.dependency import get_current_user
 from repositories.prediction_repository import PredictionRepository
 from repositories.risk_score_repository import RiskScoreRepository
-from auth.dependency import get_current_user
+from schemas.report_schema import ReportResponse
+from services.report_service import ReportService
 from utils.rate_limit import limiter
 
 router = APIRouter()

@@ -1,7 +1,9 @@
 """Repository for the Health Assistant agent: user health profiles and pending actions."""
 
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 from bson.objectid import ObjectId
+
 from utils.database import get_database
 
 _COLLECTION_PROFILES = None
@@ -27,7 +29,7 @@ class ProfileRepository:
         return await _get_profiles_collection().find_one({"userId": user_id})
 
     async def upsert(self, user_id: str, data: dict) -> dict:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         update = {k: v for k, v in data.items() if v is not None}
         update["updatedAt"] = now
         await _get_profiles_collection().update_one(
@@ -50,7 +52,7 @@ class PendingActionRepository:
         args: dict,
         summary: str,
     ) -> dict:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         action = {
             "userId": user_id,
             "sessionId": session_id,
@@ -77,7 +79,7 @@ class PendingActionRepository:
         result: dict | None = None,
         error: str | None = None,
     ) -> dict | None:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         update: dict = {
             "status": status,
             "resolvedAt": now,
@@ -93,7 +95,7 @@ class PendingActionRepository:
         return await self.find_by_id(pending_action_id)
 
     async def expire_stale(self, user_id: str) -> None:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         await _get_pending_collection().update_many(
             {"userId": user_id, "status": "pending", "expiresAt": {"$lt": now}},
             {"$set": {"status": "expired"}},

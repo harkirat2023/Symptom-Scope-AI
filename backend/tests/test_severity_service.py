@@ -8,7 +8,7 @@ class TestSeverityService:
     def test_classify_mild(self):
         assert self.service.classify("Common Cold") == "Mild"
         assert self.service.classify("Allergy") == "Mild"
-        assert self.service.classify("Mild Food Poisoning") == "Mild"
+        assert self.service.classify("Urinary Tract Infection") == "Mild"
 
     def test_classify_moderate(self):
         assert self.service.classify("Influenza") == "Moderate"

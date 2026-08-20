@@ -1,9 +1,9 @@
+
 from pydantic import BaseModel
-from typing import Optional
 
 
 class HospitalResponse(BaseModel):
-    id: Optional[str] = None
+    id: str | None = None
     name: str
     address: str
     location: str = ""
@@ -16,7 +16,7 @@ class HospitalResponse(BaseModel):
     latitude: float = 0.0
     longitude: float = 0.0
     image_url: str = ""
-    distance_km: Optional[float] = None
+    distance_km: float | None = None
 
 
 class HospitalSearchResponse(BaseModel):

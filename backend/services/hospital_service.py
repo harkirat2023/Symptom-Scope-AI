@@ -1,8 +1,8 @@
 """Hospital service — now backed by MongoDB repository."""
 
-from services.search_service import score_and_sort, filter_by_field
-from services.disease_registry import get_specialist
 from repositories.hospital_repository import HospitalRepository
+from services.disease_registry import get_specialist
+from services.search_service import score_and_sort
 
 SPECIALTY_TO_DEPARTMENT: dict[str, str] = {
     "General Physician": "General Medicine",

@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
+
 from services.email_service import EmailService
 
 logger = logging.getLogger("symptomscope")

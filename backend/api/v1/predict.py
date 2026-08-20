@@ -1,26 +1,27 @@
-from fastapi import APIRouter, Depends, Request, Query, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+
+from auth.dependency import get_current_user
+from repositories.prediction_repository import PredictionRepository
+from schemas.doctor_schema import DoctorResponse
 from schemas.prediction_schema import (
-    SymptomInput,
-    PredictionResponse,
-    TopContributingSymptom,
-    ShapExplanation,
     EmergencyInfo,
     PredictionRecord,
+    PredictionResponse,
+    ShapExplanation,
+    SymptomInput,
+    TopContributingSymptom,
 )
-from schemas.doctor_schema import DoctorResponse
-from services.prediction_service import PredictionService
-from services.feature_engineering import FeatureEngineeringService
-from services.severity_service import SeverityService
-from services.precaution_service import PrecautionService
-from services.emergency_service import EmergencyService
-from services.doctor_service import DoctorService
-from services.hospital_service import HospitalService
-from services.explainability_service import ExplainabilityService
-from services.risk_score_service import RiskScoreService
-from repositories.prediction_repository import PredictionRepository
-from auth.dependency import get_current_user
-from utils.rate_limit import limiter
 from services.analytics_service import invalidate_user_cache
+from services.doctor_service import DoctorService
+from services.emergency_service import EmergencyService
+from services.explainability_service import ExplainabilityService
+from services.feature_engineering import FeatureEngineeringService
+from services.hospital_service import HospitalService
+from services.precaution_service import PrecautionService
+from services.prediction_service import PredictionService
+from services.risk_score_service import RiskScoreService
+from services.severity_service import SeverityService
+from utils.rate_limit import limiter
 
 router = APIRouter()
 

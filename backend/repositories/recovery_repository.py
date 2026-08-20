@@ -1,7 +1,8 @@
-from datetime import datetime, timezone
-from utils.database import get_database
+from datetime import UTC, datetime
+
 from bson.objectid import ObjectId
 
+from utils.database import get_database
 
 _COLLECTION = None
 
@@ -24,7 +25,7 @@ class RecoveryPlanRepository:
         symptoms: list[str],
         plan_data: dict,
     ) -> dict:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         plan = {
             "userId": user_id,
             "predictionId": prediction_id,
@@ -68,7 +69,7 @@ class RecoveryPlanRepository:
         return await cursor.to_list(length=limit)
 
     async def regenerate_plan(self, plan_id: str, plan_data: dict) -> dict:
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         result = await _get_collection().update_one(
             {"_id": ObjectId(plan_id)},
             {

@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+
+from auth.dependency import get_current_user
+from repositories.risk_score_repository import RiskScoreRepository
 from schemas.risk_score_schema import (
+    RiskFactorBreakdown,
+    RiskScoreHistoryItem,
+    RiskScoreHistoryResponse,
+    RiskScoreResponse,
+    RiskTipsResponse,
     UserHealthProfile,
     UserHealthProfileResponse,
-    RiskScoreResponse,
-    RiskScoreHistoryResponse,
-    RiskScoreHistoryItem,
-    RiskTipsResponse,
-    RiskFactorBreakdown,
 )
 from services.risk_score_service import RiskScoreService
-from repositories.risk_score_repository import RiskScoreRepository
-from repositories.prediction_repository import PredictionRepository
-from auth.dependency import get_current_user
 from utils.rate_limit import limiter
 
 router = APIRouter()

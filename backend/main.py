@@ -1,20 +1,34 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from api.v1 import predict, doctors, reports, symptoms, hospitals, analytics, export, chat, reminders, risk_score, recovery
-from utils.database import get_database, close_database, ensure_indexes
-from utils.settings import settings
-from utils.exceptions import global_exception_handler
-from utils.rate_limit import limiter
-from utils.logging_config import setup_logging
-from utils.env_check import log_environment
-from utils.request_logger import request_logging_middleware
+
+from api.v1 import (
+    analytics,
+    chat,
+    doctors,
+    export,
+    hospitals,
+    predict,
+    recovery,
+    reminders,
+    reports,
+    risk_score,
+    symptoms,
+)
 from services.reminder_service import scheduler as reminder_scheduler
+from utils.database import close_database, ensure_indexes, get_database
+from utils.env_check import log_environment
+from utils.exceptions import global_exception_handler
+from utils.logging_config import setup_logging
+from utils.rate_limit import limiter
+from utils.request_logger import request_logging_middleware
+from utils.settings import settings
 
 setup_logging()
 logger = logging.getLogger("symptomscope")
@@ -25,7 +39,6 @@ _index_retry_task: asyncio.Task | None = None
 
 
 async def _ensure_indexes_with_retry() -> None:
-    global _index_retry_task
     backoff = 5
     while True:
         try:
@@ -163,9 +176,10 @@ app.include_router(recovery.router, prefix="/api/v1", tags=["Recovery Plan"])
 
 @app.get("/health")
 async def health_check():
+    from pathlib import Path
+
     from services.rag_service import RAGService
     from utils.database import get_database
-    from pathlib import Path
 
     db_ok = False
     try:

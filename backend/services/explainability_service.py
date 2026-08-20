@@ -1,9 +1,11 @@
-import numpy as np
 from threading import Lock
+
+import numpy as np
+
 from services.model_registry import (
+    get_label_encoder,
     get_random_forest,
     get_symptom_columns,
-    get_label_encoder,
 )
 
 
@@ -37,7 +39,9 @@ class ExplainabilityService:
         self, encoded_features: np.ndarray, predicted_class_idx: int
     ) -> tuple[float, np.ndarray]:
         features_2d = encoded_features.reshape(1, -1)
-        shap_values = self.explainer.shap_values(features_2d)
+        shap_values = self.explainer.shap_values(
+            features_2d, check_additivity=False
+        )
         expected = self.explainer.expected_value
 
         if isinstance(expected, np.ndarray) and expected.ndim > 0:

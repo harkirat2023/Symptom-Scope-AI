@@ -1,0 +1,24 @@
+# Ruff configuration for the SymptomScope AI backend.
+#
+# - `BLE001` / `S110` are ignored intentionally: the services use broad
+#   exception handling as a deliberate resilience pattern (RAG fallback,
+#   email no-op when SMTP is unconfigured, scheduler/DB best-effort paths).
+# - `extend-immutable-calls` allows FastAPI's idiomatic `Depends()/Query()/...`
+#   defaults used throughout the route modules.
+
+target-version = "py311"
+line-length = 120
+
+[lint]
+ignore = ["BLE001", "S110"]
+
+[lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Header",
+    "fastapi.Body",
+    "fastapi.Cookie",
+    "fastapi.Security",
+]

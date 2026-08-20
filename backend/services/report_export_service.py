@@ -1,6 +1,7 @@
 import csv
 import io
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from schemas.prediction_schema import PredictionRecord
 from services.disease_registry import get_precautions, get_specialist
 
@@ -48,7 +49,7 @@ class ReportExportService:
         output = io.StringIO()
         writer = csv.writer(output)
 
-        generated_at = datetime.now(timezone.utc).isoformat()
+        generated_at = datetime.now(UTC).isoformat()
         total = len(predictions)
 
         writer.writerow(["SymptomScope AI - Health Report"])
@@ -98,15 +99,17 @@ class ReportExportService:
         risk_category: str | None = None,
     ) -> bytes:
         try:
-            from reportlab.lib.pagesizes import A4
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.lib.units import mm, cm
             from reportlab.lib.colors import HexColor
+            from reportlab.lib.pagesizes import A4
+            from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+            from reportlab.lib.units import cm, mm
             from reportlab.platypus import (
-                SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-                PageBreak,
+                Paragraph,
+                SimpleDocTemplate,
+                Spacer,
+                Table,
+                TableStyle,
             )
-            from reportlab.lib import colors
         except ImportError:
             raise ImportError(
                 "reportlab is required for PDF export. Install it with: pip install reportlab"
@@ -135,11 +138,6 @@ class ReportExportService:
             fontSize=14, textColor=HexColor("#0f172a"),
             spaceBefore=16, spaceAfter=8,
         )
-        normal_style = ParagraphStyle(
-            "ReportNormal", parent=styles["Normal"],
-            fontSize=10, leading=14,
-            spaceAfter=4,
-        )
         small_style = ParagraphStyle(
             "ReportSmall", parent=styles["Normal"],
             fontSize=8, textColor=HexColor("#64748b"),
@@ -150,7 +148,7 @@ class ReportExportService:
         elements.append(Paragraph("SymptomScope AI", title_style))
         elements.append(Paragraph("Health Report", subtitle_style))
 
-        generated_at = datetime.now(timezone.utc).isoformat()
+        generated_at = datetime.now(UTC).isoformat()
         total = len(predictions)
         elements.append(Paragraph(
             f"Generated: {generated_at} | Total Predictions: {total}",
@@ -255,15 +253,15 @@ class ReportExportService:
         recovery_plan: dict | None = None,
     ) -> bytes:
         try:
-            from reportlab.lib.pagesizes import A4
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.lib.units import mm, cm
             from reportlab.lib.colors import HexColor
+            from reportlab.lib.pagesizes import A4
+            from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+            from reportlab.lib.units import cm, mm
             from reportlab.platypus import (
-                SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-                PageBreak,
+                Paragraph,
+                SimpleDocTemplate,
+                Spacer,
             )
-            from reportlab.lib import colors
         except ImportError:
             raise ImportError(
                 "reportlab is required for PDF export. Install with: pip install reportlab"
@@ -316,7 +314,7 @@ class ReportExportService:
         elements.append(Paragraph("SymptomScope AI", title_style))
         elements.append(Paragraph("Detailed Health Report", subtitle_style))
 
-        generated_at = datetime.now(timezone.utc).isoformat()
+        generated_at = datetime.now(UTC).isoformat()
         total = len(predictions)
         elements.append(Paragraph(
             f"Generated: {generated_at} | Total Predictions: {total}",

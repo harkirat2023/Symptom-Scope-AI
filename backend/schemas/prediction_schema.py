@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
+from pydantic import BaseModel, Field
+
 from schemas.doctor_schema import DoctorResponse
 
 
