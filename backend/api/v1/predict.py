@@ -176,7 +176,7 @@ async def get_prediction_history(
             prediction=p.prediction,
             confidence=p.confidence,
             severity=p.severity,
-            timestamp=p.created_at.isoformat() if hasattr(p, 'created_at') else "",
+            timestamp=p.timestamp,
         )
         for p in history
     ]

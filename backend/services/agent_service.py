@@ -95,6 +95,24 @@ TOOL_DESCRIPTIONS = {
         "type": "read",
         "description": "List the user's symptom check history (predictions).",
     },
+    "get_doctors": {
+        "type": "read",
+        "description": "Find recommended doctors, using the user's predicted condition and location when available.",
+        "args": {
+            "specialty": "string, optional, e.g. 'Cardiologist'",
+            "location": "string, optional, city/region; defaults to the user's profile location",
+            "limit": "integer, optional, default 5",
+        },
+    },
+    "get_hospitals": {
+        "type": "read",
+        "description": "Find nearby hospitals/clinics, using the user's predicted condition and location when available.",
+        "args": {
+            "location": "string, optional, city/region; defaults to the user's profile location",
+            "emergency_only": "boolean, optional, only emergency-capable facilities",
+            "limit": "integer, optional, default 5",
+        },
+    },
     "ask_medical": {
         "type": "read",
         "description": "Answer a general medical question using the knowledge base.",
@@ -108,6 +126,7 @@ YOUR GOALS (in priority order):
 1. Help the user understand their predicted condition and get a personalized recovery plan.
 2. Help the user set up medication reminders and enable email reminders.
 3. Answer medical questions using only the provided context (educational only).
+4. Help the user connect with local care (recommended doctors and nearby hospitals).
 
 You NEVER diagnose, prescribe, or replace professional medical advice. You always include a short educational disclaimer in final answers.
 
@@ -116,6 +135,7 @@ TOOLS — you may use EXACTLY ONE tool per turn. Choose a tool only when it clea
 
 INSTRUCTIONS:
 - Respond to the user in a warm, concise, human tone (2-4 sentences).
+- Format every reply for readability using Markdown: use short paragraphs, bullet lists, and numbered steps where useful (e.g. when listing doctors, hospitals, or recovery steps). Never dump raw JSON or tool output into the chat.
 - If the user asks for or implies an action (e.g. "remind me", "save my email", "make a plan", "change the reminder"), pick the matching tool and set confirm_required to true.
 - For read-only tools set confirm_required to false.
 - Do NOT invent facts about the user. Use the provided context.
@@ -147,7 +167,7 @@ ACTION PERFORMED:
 RESULT:
 {result}
 
-Write a warm, concise reply (2-4 sentences) telling the user what was done and any next step. Include a short educational disclaimer where relevant. Do not invent extra facts."""
+Write a warm, concise reply (2-4 sentences) telling the user what was done and any next step. Format the reply for readability using Markdown: a short lead-in sentence, bullet points for the key results, and a one-line next step. Include a short educational disclaimer where relevant. Do not invent extra facts."""
 
 
 def _read_tools() -> str:
@@ -295,6 +315,7 @@ class AgentService:
             _get_default_plan,
             _merge_plan_data,
             _prediction_context,
+            _retrieve_reference_material,
         )
         from repositories.prediction_repository import PredictionRepository
         from repositories.recovery_repository import RecoveryPlanRepository
@@ -310,7 +331,10 @@ class AgentService:
 
         context = _prediction_context(pred)
         try:
-            result = await self.llm.invoke(_build_prompt(context), "", json_mode=True)
+            reference = _retrieve_reference_material(context["disease"])
+            result = await self.llm.invoke(
+                _build_prompt(context, reference), "", json_mode=True
+            )
             plan_data = _merge_plan_data(_extract_json(result), context)
         except Exception as e:
             _logger.warning("Agent recovery plan generation failed (%s); using fallback", e)
@@ -411,15 +435,67 @@ class AgentService:
         return {
             "predictions": [
                 {
-                    "id": p.get("id"),
-                    "prediction": p.get("prediction"),
-                    "confidence": p.get("confidence"),
-                    "severity": p.get("severity"),
-                    "timestamp": p.get("timestamp"),
+                    "id": p.id,
+                    "prediction": p.prediction,
+                    "confidence": p.confidence,
+                    "severity": p.severity,
+                    "timestamp": p.timestamp,
                 }
                 for p in predictions
             ]
         }
+
+    async def _tool_get_doctors(self, user_id: str, args: dict) -> dict:
+        from repositories.agent_repository import ProfileRepository
+        from repositories.prediction_repository import PredictionRepository
+        from services.doctor_service import DoctorService
+
+        profile = await ProfileRepository().get(user_id)
+        location = args.get("location") or (profile or {}).get("location")
+        disease = args.get("disease")
+        if not disease:
+            latest = await PredictionRepository().find_latest_by_user(user_id)
+            disease = latest.prediction if latest else None
+        limit = min(int(args.get("limit") or 5), 10)
+        try:
+            doctors = await DoctorService().get_recommendations(
+                disease=disease,
+                location=location,
+                limit=limit,
+            )
+        except Exception as e:
+            _logger.warning("get_doctors failed: %s", e)
+            return {"doctors": [], "error": str(e)}
+        if not doctors:
+            return {"doctors": [], "message": "No doctors found for your location."}
+        return {"doctors": doctors}
+
+    async def _tool_get_hospitals(self, user_id: str, args: dict) -> dict:
+        from repositories.agent_repository import ProfileRepository
+        from repositories.prediction_repository import PredictionRepository
+        from services.hospital_service import HospitalService
+
+        profile = await ProfileRepository().get(user_id)
+        location = args.get("location") or (profile or {}).get("location")
+        disease = args.get("disease")
+        if not disease:
+            latest = await PredictionRepository().find_latest_by_user(user_id)
+            disease = latest.prediction if latest else None
+        emergency_only = bool(args.get("emergency_only", False))
+        limit = min(int(args.get("limit") or 5), 10)
+        try:
+            hospitals = await HospitalService().search(
+                disease=disease,
+                location=location,
+                emergency_only=emergency_only,
+                limit=limit,
+            )
+        except Exception as e:
+            _logger.warning("get_hospitals failed: %s", e)
+            return {"hospitals": [], "error": str(e)}
+        if not hospitals:
+            return {"hospitals": [], "message": "No hospitals found for your location."}
+        return {"hospitals": hospitals}
 
     async def _tool_ask_medical(self, user_id: str, args: dict) -> dict:
         from services.rag_service import RAGService

@@ -36,17 +36,6 @@ class Settings(BaseSettings):
     # Redis (for rate limiting / caching)
     redis_url: str | None = None
 
-    # LLM / AI Chat Assistant (Legacy — OpenAI-compatible)
-    llm_api_url: str | None = None
-    llm_api_key: str | None = None
-    llm_model: str = "gpt-3.5-turbo"
-
-    # Gemini LLM (LangChain-based)
-    gemini_api_key: str | None = None
-    gemini_model: str = "gemini-1.5-flash-latest"
-    gemini_temperature: float = 0.7
-    gemini_max_tokens: int = 1024
-
     # Groq LLM (LangChain-based; the only LLM provider used by the app)
     groq_api_key: str | None = None
     groq_model: str = "openai/gpt-oss-120b"

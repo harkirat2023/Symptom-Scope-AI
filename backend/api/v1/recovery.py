@@ -69,7 +69,38 @@ def _extract_json(text: str) -> dict:
     return json.loads(payload)
 
 
-def _build_prompt(context: dict[str, Any]) -> str:
+def _retrieve_reference_material(disease: str, k: int = 3) -> str:
+    """Best-effort RAG retrieval to ground recovery-plan generation.
+
+    Uses the existing RAG knowledge base (ChromaDB + TF-IDF) so the LLM has
+    reference material for the predicted condition. Returns an empty string if
+    the knowledge base is unavailable so plan generation never breaks.
+    """
+    try:
+        from services.rag_service import RAGService
+
+        rag = RAGService()
+        if not rag.has_documents():
+            return ""
+        docs = rag.retrieve_context(disease, k=k)
+        if not docs:
+            return ""
+        return "\n\n".join(
+            f"[Source: {d.metadata.get('source', 'Unknown')}]\n{d.page_content}"
+            for d in docs
+        )
+    except Exception as e:
+        logger.warning("Recovery plan RAG reference unavailable: %s", e)
+        return ""
+
+
+def _build_prompt(context: dict[str, Any], reference_material: str = "") -> str:
+    reference_section = (
+        f"\nReference Material (ground your recommendations in this where possible; "
+        f"do not contradict it and never fabricate facts not present):\n{reference_material}\n"
+        if reference_material
+        else ""
+    )
     return f"""Generate a comprehensive, evidence-based, educational recovery plan for a patient predicted to have {context['disease']}.
 
 Patient Context:
@@ -108,7 +139,7 @@ Return a JSON object with EXACTLY these fields:
 Rules:
 - Be specific, evidence-based, and educational.
 - Do NOT invent medications, dosages, doctor credentials, hospital names, or emergency numbers.
-- Always include medical disclaimers and emphasize this is educational guidance, not a diagnosis or treatment plan."""
+- Always include medical disclaimers and emphasize this is educational guidance, not a diagnosis or treatment plan.{reference_section}"""
 
 
 def _merge_plan_data(generated: dict, context: dict[str, Any]) -> dict:
@@ -177,7 +208,10 @@ async def generate_recovery_plan(
     context = _prediction_context(pred)
 
     try:
-        result = await llm_service.invoke(_build_prompt(context), "", json_mode=True)
+        reference = _retrieve_reference_material(context["disease"])
+        result = await llm_service.invoke(
+            _build_prompt(context, reference), "", json_mode=True
+        )
         plan_data = _merge_plan_data(_extract_json(result), context)
     except Exception as e:
         logger.warning("Recovery plan LLM generation failed (%s); using fallback", e)
@@ -258,6 +292,15 @@ async def regenerate_recovery_plan(
 
     context = _prediction_context(pred)
 
+    reference = _retrieve_reference_material(context["disease"])
+    reference_section = (
+        "\nReference Material (ground your recommendations in this where possible; "
+        "do not contradict it and never fabricate facts not present):\n"
+        f"{reference}\n"
+        if reference
+        else ""
+    )
+
     prompt = (
         "Generate a NEW comprehensive, evidence-based recovery plan for a patient with "
         f"{context['disease']}.\n\n"
@@ -273,6 +316,7 @@ async def regenerate_recovery_plan(
         "Provide fresh, varied recommendations. Do not invent medications, dosages, "
         "doctor credentials, hospital names, or emergency numbers. Always include "
         "medical disclaimers."
+        f"{reference_section}"
     )
 
     try:

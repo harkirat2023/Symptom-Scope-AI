@@ -1,5 +1,5 @@
 """
-Centralized LLM Service — LangChain + Gemini with Groq fallback and direct SDK fallback.
+Centralized LLM Service — Groq (LangChain) only.
 
 Provides:
 - AI Medical Report Explainer
@@ -7,11 +7,9 @@ Provides:
 - Medical Knowledge Assistant (RAG-aware)
 - General Chat with prediction context
 
-Fallback chain:
-1. LangChain + Gemini (primary)
-2. LangChain + Groq (if configured)
-3. Direct google-generativeai SDK (if Gemini key available)
-4. Graceful error message (no crash)
+Provider chain:
+1. LangChain + Groq (the only provider; GROQ_API_KEY required)
+2. Fail-fast with a clear error (no crash, no silent fallback)
 """
 
 import asyncio

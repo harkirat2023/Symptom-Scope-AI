@@ -9,6 +9,8 @@ const isProtectedRoute = createRouteMatcher([
   "/settings(.*)",
   "/symptom-checker(.*)",
   "/results(.*)",
+  "/recovery-plan(.*)",
+  "/reminders(.*)",
 ]);
 
 // Wrap Clerk middleware invocation in a try/catch so that deployments without
