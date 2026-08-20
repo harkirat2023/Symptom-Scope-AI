@@ -1,5 +1,24 @@
 import type { NextConfig } from "next";
 
+const apiOrigin = process.env.NEXT_PUBLIC_API_URL
+  ? new URL(process.env.NEXT_PUBLIC_API_URL).origin
+  : null;
+
+const connectSources = [
+  "'self'",
+  "https://clerk.accounts.dev",
+  "https://*.clerk.accounts.dev",
+  "https://*.accounts.dev",
+  "https://clerk-telemetry.com",
+  "https://challenges.cloudflare.com",
+  "http://localhost:*",
+  "ws://localhost:*",
+  "https://symptom-scope-ai.onrender.com",
+];
+if (apiOrigin && !connectSources.includes(apiOrigin)) {
+  connectSources.push(apiOrigin);
+}
+
 const cspValue = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://clerk.accounts.dev https://*.clerk.accounts.dev https://*.accounts.dev https://challenges.cloudflare.com",
@@ -7,7 +26,7 @@ const cspValue = [
   "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://img.clerk.com https://fastapi.tiangolo.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "connect-src 'self' https://clerk.accounts.dev https://*.clerk.accounts.dev https://*.accounts.dev https://clerk-telemetry.com https://challenges.cloudflare.com http://localhost:* ws://localhost:*",
+  `connect-src ${connectSources.join(" ")}`,
   "frame-src 'self' https://clerk.accounts.dev https://*.clerk.accounts.dev https://*.accounts.dev https://challenges.cloudflare.com",
   "base-uri 'self'",
   "form-action 'self'",
